@@ -216,6 +216,8 @@ void write_restart(Simulation* simulation, std::array<double,3>& timeP)
   auto& Dn = com_mod.Dn;
   auto& pS0 = com_mod.pS0;
   auto& Yn = com_mod.Yn;
+  auto& Yt = com_mod.Yt;
+  auto& Cai = com_mod.Cai;
   auto& Xion = cep_mod.Xion;
   auto& cem = cep_mod.cem;
 
@@ -333,6 +335,11 @@ void write_restart(Simulation* simulation, std::array<double,3>& timeP)
     }
   }
 
+  if (com_mod.grEq) {
+    auto& grInt = com_mod.grInt;
+    restart_file.write((char*)grInt.data(), grInt.msize());
+  }
+
   restart_file.close();
 
   // Create a soft link to the bin file for the last time step.
@@ -371,6 +378,8 @@ void write_results(ComMod& com_mod, const std::array<double,3>& timeP, const std
   auto& An = com_mod.An;
   auto& Dn = com_mod.Dn;
   auto& Yn = com_mod.Yn;
+  auto& Yt = com_mod.Yt;
+  auto& Cai = com_mod.Cai;
 
   auto& stamp = com_mod.stamp;
 

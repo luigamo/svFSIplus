@@ -57,24 +57,6 @@
 #include <stdlib.h>
 #include <iomanip>
 #include <iostream>
-#include <cmath>
-#include <fstream>
-
-//------------------------
-// add_eq_linear_algebra
-//------------------------
-// Create a LinearAlgebra object for an equation.
-//
-void add_eq_linear_algebra(ComMod& com_mod, eqType& lEq)
-{
-  lEq.linear_algebra = LinearAlgebraFactory::create_interface(lEq.linear_algebra_type);
-  lEq.linear_algebra->set_preconditioner(lEq.linear_algebra_preconditioner);
-  lEq.linear_algebra->initialize(com_mod, lEq);
-
-  if (lEq.linear_algebra_assembly_type != consts::LinearAlgebraType::none) {
-    lEq.linear_algebra->set_assembly(lEq.linear_algebra_assembly_type);
-  }
-}
 
 /// @brief Read in a solver XML file and all mesh and BC data.  
 //
@@ -101,95 +83,9 @@ void read_files(Simulation* simulation, const std::string& file_name)
   
 }
 
-
-
-/// @brief Iterate the precomputed state-variables in time using linear interpolation to the current time step size
-//
-void iterate_precomputed_time(Simulation* simulation) {
-  using namespace consts;
-
-  auto& com_mod = simulation->com_mod;
-  auto& cm_mod = simulation->cm_mod;
-  auto& cm = com_mod.cm;
-  auto& cep_mod = simulation->get_cep_mod();
-
-  int nTS = com_mod.nTS;
-  int stopTS = nTS;
-  int tDof = com_mod.tDof;
-  int tnNo = com_mod.tnNo;
-  int nFacesLS = com_mod.nFacesLS;
-  int nsd = com_mod.nsd;
-
-  auto& Ad = com_mod.Ad;      // Time derivative of displacement
-  auto& Rd = com_mod.Rd;      // Residual of the displacement equation
-  auto& Kd = com_mod.Kd;      // LHS matrix for displacement equation
-
-  auto& Ao = com_mod.Ao;      // Old time derivative of variables (acceleration)
-  auto& Yo = com_mod.Yo;      // Old variables (velocity)
-  auto& Do = com_mod.Do;      // Old integrated variables (dissplacement)
-
-  auto& An = com_mod.An;      // New time derivative of variables
-  auto& Yn = com_mod.Yn;      // New variables (velocity)
-  auto& Dn = com_mod.Dn;      // New integrated variables
-
-  int& cTS = com_mod.cTS;
-  int& nITs = com_mod.nITs;
-  double& dt = com_mod.dt;
-
-  if (com_mod.usePrecomp) {
-#ifdef debug_iterate_solution
-        dmsg << "Use precomputed values ..." << std::endl;
-#endif
-    // This loop is used to interpolate between known time values of the precomputed
-    // state-variable solution
-    for (int l = 0; l < com_mod.nMsh; l++) {
-      auto lM = com_mod.msh[l];
-      if (lM.Ys.nslices() > 1) {
-        // If there is only one temporal slice, then the solution is assumed constant
-        // in time and no interpolation is performed
-        // If there are multiple temporal slices, then the solution is linearly interpolated
-        // between the known time values and the current time.
-        double precompDt = com_mod.precompDt;
-        double preTT = precompDt * (lM.Ys.nslices() - 1);
-        double cT = cTS * dt;
-        double rT = std::fmod(cT, preTT);
-        int n1, n2;
-        double alpha;
-        if (precompDt == dt) {
-          alpha =  0.0;
-          if (cTS < lM.Ys.nslices()) {
-            n1 = cTS - 1;
-          } else {
-            n1 = cTS % lM.Ys.nslices() - 1;
-          }
-        } else {
-          n1 = static_cast<int>(rT / precompDt) - 1;
-          alpha = std::fmod(rT, precompDt);
-        }
-        n2 = n1 + 1;
-        for (int i = 0; i < tnNo; i++) {
-          for (int j = 0; j < nsd; j++) {
-            if (alpha == 0.0) {
-              Yn(j, i) = lM.Ys(j, i, n2);
-            } else {
-              Yn(j, i) = (1.0 - alpha) * lM.Ys(j, i, n1) + alpha * lM.Ys(j, i, n2);
-            }
-          }
-        }
-      } else {
-        for (int i = 0; i < tnNo; i++) {
-          for (int j = 0; j < nsd; j++) {
-            Yn(j, i) = lM.Ys(j, i, 0);
-          }
-        }
-      }
-    }
-  }
-}
-
 /// @brief Iterate the simulation in time.
 ///
-/// Reproduces the outer and inner loops in Fortan MAIN.f.
+/// Reproduces the outer and inner loops in Fortan MAIN.f. 
 //
 void iterate_solution(Simulation* simulation)
 {
@@ -247,6 +143,12 @@ void iterate_solution(Simulation* simulation)
     dt = dt / 10.0;
   }
 
+  // Do at least these many time steps, even if larger than nTS
+  int newTS = com_mod.newTS;
+  int minTS = cTS + newTS;
+  nTS = std::max(nTS, minTS);
+  stopTS = nTS;
+
   double& time = com_mod.time;
   auto& cEq = com_mod.cEq;
 
@@ -261,6 +163,8 @@ void iterate_solution(Simulation* simulation)
   auto& An = com_mod.An;      // New time derivative of variables
   auto& Yn = com_mod.Yn;      // New variables (velocity)
   auto& Dn = com_mod.Dn;      // New integrated variables
+  auto& Yt = com_mod.Yt;      // New variables (tension)
+  auto& Cai = com_mod.Cai;      // New variables (calcium)
 
   bool l1 = false;
   bool l2 = false;
@@ -272,6 +176,7 @@ void iterate_solution(Simulation* simulation)
 
   bool exit_now = false;
   double elapsed_time = 0.0;
+  com_mod.gr_coup_wss = false;
 
   // Uncomment these two lines to enable writting values to a file.
   //Array<double>::write_enabled = true;
@@ -347,9 +252,7 @@ void iterate_solution(Simulation* simulation)
 
     set_bc::set_bc_dir(com_mod, An, Yn, Dn);
 
-    iterate_precomputed_time(simulation);
-
-    // Inner loop for Newton iteration
+    // Inner loop for iteration
     //
     int inner_count = 1;
     int reply;
@@ -388,6 +291,7 @@ void iterate_solution(Simulation* simulation)
       #ifdef debug_iterate_solution
       dmsg << "Initiator step ..." << std::endl;
       #endif
+
       pic::pici(simulation, Ag, Yg, Dg);
       Ag.write("Ag_pic"+ istr);
       Yg.write("Yg_pic"+ istr);
@@ -432,7 +336,7 @@ void iterate_solution(Simulation* simulation)
       #endif
 
       for (int iM = 0; iM < com_mod.nMsh; iM++) {
-        eq_assem::global_eq_assem(com_mod, cep_mod, com_mod.msh[iM], Ag, Yg, Dg);
+        eq_assem::global_eq_assem(com_mod, cep_mod, cm_mod, com_mod.msh[iM], Ag, Yg, Dg);
       }
       com_mod.R.write("R_as"+ istr);
       com_mod.Val.write("Val_as"+ istr);
@@ -559,7 +463,6 @@ void iterate_solution(Simulation* simulation)
       for (int iBc = 0; iBc < eq.nBc; iBc++) {
         int i = eq.bc[iBc].lsPtr;
         if (i != -1) {
-          // Resistance term for coupled Neumann BC tangent contribution
           res(i) = eq.gam * dt * eq.bc[iBc].r;
           incL(i) = 1;
         }
@@ -578,7 +481,7 @@ void iterate_solution(Simulation* simulation)
       com_mod.Val.write("Val_solve"+ istr);
       com_mod.R.write("R_solve"+ istr);
 
-      // Solution is obtained, now updating (Corrector) and check for convergence
+      // Solution is obtained, now updating (Corrector)
       //
       // Modifies: com_mod.An com_mod.Dn com_mod.Yn cep_mod.Xion com_mod.pS0 com_mod.pSa
       //            com_mod.pSn com_mod.cEq eq.FSILS.RI.iNorm eq.pNorm 
@@ -713,7 +616,7 @@ void iterate_solution(Simulation* simulation)
       if (l2 && l3) {
         output::output_result(simulation, com_mod.timeP, 3, iEqOld);
         bool lAvg = false;
-        vtk_xml::write_vtus(simulation, An, Yn, Dn, lAvg);
+        vtk_xml::write_vtus(simulation, Yt, Cai, Yn, lAvg);
       } else {
         output::output_result(simulation, com_mod.timeP, 2, iEqOld);
       }
@@ -812,7 +715,6 @@ int main(int argc, char *argv[])
     #endif
     read_files(simulation, file_name);
 
-
     // Distribute data to processors.
     #ifdef debug_main
     dmsg << "Distribute data to processors " << " ... ";
@@ -827,13 +729,9 @@ int main(int argc, char *argv[])
     dmsg << "Initialize " << " ... ";
     #endif
     initialize(simulation, init_time);
-
-    // Create LinearAlgebra objects for each equation.
-    //
-    for (int iEq = 0; iEq < simulation->com_mod.nEq; iEq++) {
-      auto& eq = simulation->com_mod.eq[iEq];
-      add_eq_linear_algebra(simulation->com_mod, eq);
-    }
+    #ifdef WITH_PETSC
+      ls_ns::initialize_petsc(simulation->com_mod);
+    #endif
 
     #ifdef debug_main
     for (int iM = 0; iM < simulation->com_mod.nMsh; iM++) {

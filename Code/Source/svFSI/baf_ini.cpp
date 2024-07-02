@@ -38,7 +38,6 @@
 #include "nn.h"
 #include "set_bc.h"
 #include "utils.h"
-#include "svZeroD_subroutines.h"
 
 #include "fsils_api.hpp"
 #include "fils_struct.hpp"
@@ -122,8 +121,7 @@ void baf_ini(Simulation* simulation)
   int iEq = 0;
   com_mod.cplBC.fa.resize(com_mod.cplBC.nFa); 
   com_mod.cplBC.xn.resize(com_mod.cplBC.nX);
-  
-  // Assign cplBC internal variables
+
   if (com_mod.cplBC.coupled) {
     auto& eq = com_mod.eq[iEq];
     for (int iBc = 0; iBc < eq.nBc; iBc++) {
@@ -141,8 +139,6 @@ void baf_ini(Simulation* simulation)
 
         } else if (utils::btest(bc.bType, iBC_Neu)) {
           com_mod.cplBC.fa[i].bGrp = CplBCType::cplBC_Neu;
-          // For implicit or semi-implicit (not explicit) Neumann 0D coupling scheme, 
-          // set bType to resistance
           if (com_mod.cplBC.schm != CplBCType::cplBC_E) {
             bc.bType= utils::ibset(bc.bType, iBC_res);
           }
@@ -165,10 +161,6 @@ void baf_ini(Simulation* simulation)
 
     if (com_mod.cplBC.useGenBC) {
       set_bc::genBC_Integ_X(com_mod, cm_mod, "I");
-    }
-
-    if (com_mod.cplBC.useSvZeroD) {
-      svZeroD::init_svZeroD(com_mod, cm_mod);
     }
 
     if (com_mod.cplBC.schm != CplBCType::cplBC_E) {
@@ -200,7 +192,8 @@ void baf_ini(Simulation* simulation)
       auto& eq = com_mod.eq[0];
       if (all_fun::is_domain(com_mod, eq, a, EquationType::phys_struct) || 
           all_fun::is_domain(com_mod, eq, a, EquationType::phys_ustruct) || 
-          all_fun::is_domain(com_mod, eq, a, EquationType::phys_lElas)) {
+          all_fun::is_domain(com_mod, eq, a, EquationType::phys_lElas) || 
+          all_fun::is_domain(com_mod, eq, a, EquationType::phys_gr)) {
         i = i + 1;
       }
     }
@@ -212,7 +205,8 @@ void baf_ini(Simulation* simulation)
       auto& eq = com_mod.eq[0];
       if (all_fun::is_domain(com_mod, eq, a, EquationType::phys_struct) || 
           all_fun::is_domain(com_mod, eq, a, EquationType::phys_ustruct) || 
-          all_fun::is_domain(com_mod, eq, a, EquationType::phys_lElas)) {
+          all_fun::is_domain(com_mod, eq, a, EquationType::phys_lElas) || 
+          all_fun::is_domain(com_mod, eq, a, EquationType::phys_gr)) {
         gNodes(i) = a;
         i = i + 1;
       }
@@ -478,6 +472,9 @@ void face_ini(Simulation* simulation, mshType& lM, faceType& lFa)
   lFa.nV.resize(nsd,lFa.nNo); 
   Array<double> sV(nsd,com_mod.tnNo);
 
+  // Compute face normals at elements
+  lFa.eV.resize(nsd,lFa.nEl);
+
   bool flag = false;
 
   if (std::set<ElementType>{ElementType::TRI6,ElementType::QUD8,ElementType::QUD9,
@@ -491,7 +488,6 @@ void face_ini(Simulation* simulation, mshType& lM, faceType& lFa)
   dmsg << "Flag: " << flag;
   #endif
 
-  // Compute integral of normal vector over surface element
   if (!flag) {
     Vector<double> nV(nsd);
     for (int e = 0; e < lFa.nEl; e++) {
@@ -511,6 +507,10 @@ void face_ini(Simulation* simulation, mshType& lM, faceType& lFa)
             sV(i,Ac) = sV(i,Ac) + nV(i)*lFa.N(a,g)*lFa.w(g);
           }
         }
+      }
+      // Store element normal
+      for (int i = 0; i < sV.nrows(); i++) {
+        lFa.eV(i,e) = nV(i) / sqrt(utils::norm(nV));
       }
     }
 
@@ -711,7 +711,6 @@ void fsi_ls_ini(ComMod& com_mod, const CmMod& cm_mod, bcType& lBc, const faceTyp
   Array<double> sV(nsd,tnNo); 
   Vector<int> gNodes(nNo);
 
-  // Copy mesh node id corresponding to face node id to gNodes
   for (int a= 0; a < nNo; a++) {
     gNodes(a) = lFa.gN(a);
   }
@@ -743,7 +742,6 @@ void fsi_ls_ini(ComMod& com_mod, const CmMod& cm_mod, bcType& lBc, const faceTyp
     }
 
   } else if (btest(lBc.bType, iBC_Neu)) {
-    // Compute integral of normal vector over the face (needed for resistance BC/0D-coupling)
     if (btest(lBc.bType, iBC_res)) {
       sV = 0.0;
       for (int e = 0; e < lFa.nEl; e++) {
@@ -773,8 +771,6 @@ void fsi_ls_ini(ComMod& com_mod, const CmMod& cm_mod, bcType& lBc, const faceTyp
 
       lsPtr = lsPtr + 1;
       lBc.lsPtr = lsPtr;
-      
-      // Fills lhs.face(i) variables, including val is sVl exists
       fsils_bc_create(com_mod.lhs, lsPtr, lFa.nNo, nsd, BcType::BC_TYPE_Neu, gNodes, sVl); 
     } else {
       lBc.lsPtr = -1;

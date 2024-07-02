@@ -1,0 +1,43 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "/mnt/c/Users/Luisa Mar\u00eda Gavier/svFSIplus/courtemanche/CMakeFiles/svFSI"
+		},
+		{
+			"file" : "/mnt/c/Users/Luisa Mar\u00eda Gavier/svFSIplus/courtemanche/CMakeFiles/svFSI.rule"
+		},
+		{
+			"file" : "/mnt/c/Users/Luisa Mar\u00eda Gavier/svFSIplus/courtemanche/CMakeFiles/svFSI-complete.rule"
+		},
+		{
+			"file" : "/mnt/c/Users/Luisa Mar\u00eda Gavier/svFSIplus/courtemanche/svFSI-prefix/src/svFSI-stamp/svFSI-build.rule"
+		},
+		{
+			"file" : "/mnt/c/Users/Luisa Mar\u00eda Gavier/svFSIplus/courtemanche/svFSI-prefix/src/svFSI-stamp/svFSI-configure.rule"
+		},
+		{
+			"file" : "/mnt/c/Users/Luisa Mar\u00eda Gavier/svFSIplus/courtemanche/svFSI-prefix/src/svFSI-stamp/svFSI-download.rule"
+		},
+		{
+			"file" : "/mnt/c/Users/Luisa Mar\u00eda Gavier/svFSIplus/courtemanche/svFSI-prefix/src/svFSI-stamp/svFSI-install.rule"
+		},
+		{
+			"file" : "/mnt/c/Users/Luisa Mar\u00eda Gavier/svFSIplus/courtemanche/svFSI-prefix/src/svFSI-stamp/svFSI-mkdir.rule"
+		},
+		{
+			"file" : "/mnt/c/Users/Luisa Mar\u00eda Gavier/svFSIplus/courtemanche/svFSI-prefix/src/svFSI-stamp/svFSI-patch.rule"
+		},
+		{
+			"file" : "/mnt/c/Users/Luisa Mar\u00eda Gavier/svFSIplus/courtemanche/svFSI-prefix/src/svFSI-stamp/svFSI-update.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"svFSI"
+		],
+		"name" : "svFSI"
+	}
+}

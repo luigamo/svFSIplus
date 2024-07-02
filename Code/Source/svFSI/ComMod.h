@@ -55,8 +55,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
-
-class LinearAlgebra;
+#include <set>
 
 /// @brief Fourier coefficients that are used to specify unsteady BCs
 //
@@ -384,6 +383,45 @@ class stModelType
     fibStrsType Tf;
 };
 
+class grModelType
+{
+  public:
+    int n_t_pre = 0;
+    int n_t_end = 0;
+    int example = 0;
+    double KsKi = 0.0;
+    double curve = 0.0;
+    double mult = 0.0;
+    double rIo = 0.0;
+    double hwaves = 0.0;
+    double lo = 0.0;
+    double phieo = 0.0;
+    double phimo = 0.0;
+    double phico = 0.0;
+    double eta = 0.0;
+    double mu = 0.0;
+    double Get = 0.0;
+    double Gez = 0.0;
+    double alpha = 0.0;
+    double cm = 0.0;
+    double dm = 0.0;
+    double Gm = 0.0;
+    double cc = 0.0;
+    double dc = 0.0;
+    double Gc = 0.0;
+    double betat = 0.0;
+    double betaz = 0.0;
+    double betad = 0.0;
+    double Tmax = 0.0;
+    double lamM = 0.0;
+    double lam0 = 0.0;
+    double KfKi = 0.0;
+    double inflam = 0.0;
+    double aexp = 0.0;
+    double delta = 0.0;
+
+};
+
 /// @brief Fluid viscosity model type
 //
 class viscModelType
@@ -440,6 +478,9 @@ class dmnType
 
     // Viscosity model for fluids
     viscModelType visc;
+
+    // G&R model for growth and remodeling
+    grModelType grM;
 };
 
 /// @brief Mesh adjacency (neighboring element for each element)
@@ -568,6 +609,9 @@ class faceType
     // Normal vector to each nodal point
     Array<double> nV;
 
+    // Normal vector to each element
+    Array<double> eV;
+
     // Shape functions derivative at Gauss points
     // double Nx(:,:,:);
     Array3<double> Nx;
@@ -615,6 +659,7 @@ class outputType
     std::string name;
 };
 
+
 /// @brief Linear system of equations solver type
 //
 class lsType
@@ -623,6 +668,9 @@ class lsType
 
     /// @brief LS solver                     (IN)
     consts::SolverType LS_type = consts::SolverType::lSolver_NA;
+
+    /// @brief Preconditioner                (IN)
+    consts::PreconditionerType PREC_Type = consts::PreconditionerType::PREC_NONE;
 
     /// @brief Successful solving            (OUT)
     bool suc = false;
@@ -666,7 +714,7 @@ class lsType
     /// @brief Calling duration              (OUT)
     double callD = 0.0;
 
-    //@brief Configuration file for linear solvers (Trilinos, PETSc)
+    //Configuration file for linear solvers (Trilinos, PETSc)
     std::string config;
 };
 
@@ -741,10 +789,7 @@ class cplBCType
     /// @brief Whether to use genBC
     bool useGenBC = false;
 
-    //  Whether to use svZeroD
-    bool useSvZeroD = false;
-
-    //  Whether to initialize RCR from flow data
+    /// @brief Whether to initialize RCR from flow data
     bool initRCR = false;
 
     /// @brief Number of coupled faces
@@ -860,13 +905,16 @@ class mshType
     /// @brief Number of fiber directions
     int nFn = 0;
 
+    /// @brief Number of growth and remodeling properties in gr_props
+    int n_gr_props = 0;
+
     /// @brief Mesh scale factor
     double scF = 0.0;
 
     /// @brief IB: Mesh size parameter
     double dx = 0.0;
 
-    /// @breif ordering: node ordering for boundaries
+    /// @brief ordering: node ordering for boundaries
     std::vector<std::vector<int>> ordering;
 
     /// @brief Element distribution between processors
@@ -886,6 +934,9 @@ class mshType
 
     /// @brief The connectivity array mapping eNoN,nEl --> nNo
     Array<int> IEN;
+
+    /// @brief map: node -> element
+    std::vector<std::map<int, std::set<int>>> map_node_ele;
 
     /// @brief gIEN mapper from old to new
     Vector<int> otnIEN;
@@ -933,6 +984,9 @@ class mshType
     /// electrophysiology and solid mechanics
     Array<double> fN;
 
+    /// @brief Growth and remodeling properties stored at the node level
+    Array<double> gr_props;
+
     /// @brief Parent shape functions gradient
     /// double Nx(:,:,:)
     Array3<double> Nx;
@@ -940,10 +994,6 @@ class mshType
     /// @brief Second derivatives of shape functions - used for shells & IGA
     /// davep double Nxx(:,:,:)
     Array3<double> Nxx;
-
-    /// @brief Solution field (displacement, velocity, pressure, etc.) for a known, potentially
-    /// time-varying, quantity of interest across a mesh
-    Array3<double> Ys;
 
     /// @brief Mesh Name
     std::string name;
@@ -1074,18 +1124,6 @@ class eqType
 
     /// @brief type of linear solver
     lsType ls;
-
-    /// @brief The type of interface to a numerical linear algebra library.
-    consts::LinearAlgebraType linear_algebra_type;
-
-    /// @brief The type of assembly interface to a numerical linear algebra library.
-    consts::LinearAlgebraType linear_algebra_assembly_type;
-
-    /// @brief The type of preconditioner used by the interface to a numerical linear algebra library.
-    consts::PreconditionerType linear_algebra_preconditioner = consts::PreconditionerType::PREC_FSILS;
-
-    /// @brief Interface to a numerical linear algebra library.
-    LinearAlgebra* linear_algebra = nullptr;
 
     /// @brief FSILS type of linear solver
     fsi_linear_solver::FSILS_lsType FSILS;
@@ -1305,6 +1343,42 @@ class ibType
     ibCommType cm;
 };
 
+/// @brief Data type for Trilinos Linear Solver related arrays
+//
+class tlsType
+{
+  public:
+
+    /// @brief Local to global mapping
+    Vector<int> ltg;
+
+    /// @brief Factor for Dirichlet BCs
+    Array<double> W;
+
+    /// @brief Residual
+    Array<double> R;
+};
+
+// Data type for PETSc Linear Solver related arrays
+//
+class plsType
+{
+  public:
+
+    //  Local to global mapping
+    Vector<int> ltg;
+
+    //  Factor for Dirichlet BCs
+    Array<double> W;
+
+    //  Residue
+    Array<double> R;
+
+    // Factor for Lumped Parameter BCs
+    Array<double> V;
+};
+
+
 /// @brief The ComMod class duplicates the data structures in the Fortran COMMOD module
 /// defined in MOD.f. 
 ///
@@ -1366,6 +1440,9 @@ class ComMod {
     /// @brief Whether velocity-pressure based structural dynamics solver is used
     bool sstEq = false;
 
+    /// @brief Whether growth and remodeling is being solved
+    bool grEq = false;
+
     /// @brief Whether to detect and apply any contact model
     bool iCntct = false;
 
@@ -1375,8 +1452,7 @@ class ComMod {
     /// @brief Postprocess step - convert bin to vtk
     bool bin2VTK = false;
 
-    /// @brief Whether to use precomputed state-variable solutions
-    bool usePrecomp = false;
+
     //----- int members -----//
 
     /// @brief Current domain
@@ -1396,8 +1472,7 @@ class ComMod {
     /// @brief Current equation degrees of freedom
     int dof = 0;
 
-    /// @brief Global total number of nodes, across all meshes (total) and all 
-    /// procs (global)
+    /// @brief Global total number of nodes
     int gtnNo = 0;
 
     /// @brief Number of equations
@@ -1414,6 +1489,9 @@ class ComMod {
 
     /// @brief Number of time steps
     int nTS = 0;
+
+    /// @brief Number of new time steps
+    int newTS = 0;
 
     /// @brief Number of initialization time steps
     int nITs = 0;
@@ -1436,8 +1514,7 @@ class ComMod {
     /// @brief Total number of degrees of freedom per node
     int tDof = 0;
 
-    /// @brief Total number of nodes (number of nodes on current proc across
-    /// all meshes)
+    /// @brief Total number of nodes
     int tnNo = 0;
 
     /// @brief Restart Time Step
@@ -1446,14 +1523,16 @@ class ComMod {
     /// @brief Number of stress values to be stored
     int nsymd = 0;
 
+    /// @brief Number of internal growth and remodeling variables
+    int nGrInt = 0;
+
+    /// @brief Is growth and remodeling coupled to fluids?
+    bool gr_coup_wss = 0;
 
     //----- double members -----//
 
     /// @brief Time step size
     double dt = 0.0;
-
-    /// @brief Time step size of the precomputed state-variables
-    double precompDt = 0.0;
 
     /// @brief Time
     double time = 0.0;
@@ -1473,11 +1552,6 @@ class ComMod {
     /// @brief Stop_trigger file name
     std::string stopTrigName;
 
-    /// @brief Precomputed state-variable file name
-    std::string precompFileName;
-
-    /// @brief Precomputed state-variable field name
-    std::string precompFieldName;
     // ALLOCATABLE DATA
 
     /// @brief Column pointer (for sparse LHS matrix structure)
@@ -1523,7 +1597,7 @@ class ComMod {
     /// @brief LHS matrix
     Array<double>  Val;
 
-    /// @brief Position vector of mesh nodes (in ref config)
+    /// @brief Position vector
     Array<double>  x;
 
     /// @brief Old variables (velocity)
@@ -1531,9 +1605,20 @@ class ComMod {
 
     /// @brief New variables
     Array<double>  Yn;
+	
+	/// @brief Tension
+    Array<double>  Yt;
+	
+	/// @brief Calcium
+    Array<double>  Cai;
 
     /// @brief Body force
     Array<double>  Bf;
+
+    /// @brief Internal growth and remodeling variables
+    Array3<double> grInt;
+    Array3<double> grInt_orig;
+    Array<double>  grInt_n;
 
     //-----------------------------------------------------
     // Additional arrays for velocity-based formulation of 
@@ -1595,6 +1680,12 @@ class ComMod {
 
     /// @brief IB: Immersed boundary data structure
     ibType ib;
+
+    /// @brief Trilinos Linear Solver data type
+    tlsType  tls;
+
+    // PETSc Liear Solver data type
+    plsType pls;
 
     bool debug_active = false;
 

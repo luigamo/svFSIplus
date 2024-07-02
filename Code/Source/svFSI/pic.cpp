@@ -29,11 +29,6 @@
  */
 
 // The code here replicates the Fortran code in PIC.f.
-//
-// See the publication below, section 4.4 for theory and derivation:
-// Bazilevs, et al. "Isogeometric fluid-structure interaction:
-// theory, algorithms, and computations.", Computational Mechanics,
-// 43 (2008): 3-37. doi: 10.1007/s00466-008-0315-x
 
 #include "pic.h"
 
@@ -150,11 +145,19 @@ void picc(Simulation* simulation)
     }
 
   } else {
-    for (int a = 0; a < tnNo; a++) {
-      for (int i = 0; i < e-s+1; i++) {
-        An(i+s,a) = An(i+s,a) - R(i,a);
-        Yn(i+s,a) = Yn(i+s,a) - R(i,a)*coef[0];
-        Dn(i+s,a) = Dn(i+s,a) - R(i,a)*coef[1];
+    if (eq.phys == EquationType::phys_gr) {
+      for (int a = 0; a < tnNo; a++) {
+        for (int i = 0; i < e-s+1; i++) {
+          Dn(i+s,a) = Dn(i+s,a) - R(i,a);
+        }
+      }
+    } else {
+      for (int a = 0; a < tnNo; a++) {
+        for (int i = 0; i < e-s+1; i++) {
+          An(i+s,a) = An(i+s,a) - R(i,a);
+          Yn(i+s,a) = Yn(i+s,a) - R(i,a)*coef[0];
+          Dn(i+s,a) = Dn(i+s,a) - R(i,a)*coef[1];
+        }
       }
     }
   }
@@ -226,7 +229,6 @@ void picc(Simulation* simulation)
   // IB treatment
   //if (ibFlag) CALL IB_PICC()
 
-  // Computes norms and check for convergence of Newton iterations
   double eps = std::numeric_limits<double>::epsilon();
 
   if (utils::is_zero(eq.FSILS.RI.iNorm)) {
@@ -526,32 +528,21 @@ void pici(Simulation* simulation, Array<double>& Ag, Array<double>& Yg, Array<do
     dmsg << "coef: " << coef[0] << " " << coef[1] << " " << coef[2] << " " << coef[3];
     #endif
 
-    if ((eq.phys == Equation_heatF) && (com_mod.usePrecomp)){
-        for (int a = 0; a < tnNo; a++) {
-            for (int j = 0; j < com_mod.nsd; j++) {
-                //Ag(j, a) = An(j, a);
-                //Yg(j, a) = Yn(j, a);
-                //Dg(j, a) = Dn(j, a);
-                Ag(j, a) = Ao(j, a) * coef(0) + An(j, a) * coef(1);
-                Yg(j, a) = Yo(j, a) * coef(2) + Yn(j, a) * coef(3);
-                Dg(j, a) = Do(j, a) * coef(2) + Dn(j, a) * coef(3);
-            }
+    if (eq.phys == EquationType::phys_gr) {
+      for (int a = 0; a < tnNo; a++) {
+        for (int j = s; j <= e; j++) {
+          Dg(j,a) = Dn(j,a);
         }
-        for (int a = 0; a < tnNo; a++) {
-            for (int j = s; j <= e; j++) {
-                Ag(j, a) = Ao(j, a) * coef(0) + An(j, a) * coef(1);
-                Yg(j, a) = Yo(j, a) * coef(2) + Yn(j, a) * coef(3);
-                Dg(j, a) = Do(j, a) * coef(2) + Dn(j, a) * coef(3);
-            }
+      }
+    }
+    else {
+      for (int a = 0; a < tnNo; a++) {
+        for (int j = s; j <= e; j++) {
+          Ag(j,a) = Ao(j,a)*coef(0) + An(j,a)*coef(1);
+          Yg(j,a) = Yo(j,a)*coef(2) + Yn(j,a)*coef(3);
+          Dg(j,a) = Do(j,a)*coef(2) + Dn(j,a)*coef(3);
         }
-    } else {
-        for (int a = 0; a < tnNo; a++) {
-            for (int j = s; j <= e; j++) {
-                Ag(j, a) = Ao(j, a) * coef(0) + An(j, a) * coef(1);
-                Yg(j, a) = Yo(j, a) * coef(2) + Yn(j, a) * coef(3);
-                Dg(j, a) = Do(j, a) * coef(2) + Dn(j, a) * coef(3);
-            }
-        }
+      }
     }
   }
 
@@ -657,9 +648,30 @@ void picp(Simulation* simulation)
     #endif
 
     // [TODO:DaveP] careful here with s amd e.
-    for (int i = s; i <= e; i++) {
-      for (int j = 0; j < Ao.ncols(); j++) {
-        An(i,j) = Ao(i,j) * coef;
+    if (eq.phys == EquationType::phys_gr) {
+      // Update the solution vectors? (new load step in FSG coupling)
+      auto & lM = com_mod.msh[0];
+      const bool update = std::fabs(lM.gr_props(12, 0) - 1.0) < 1.0e-6;
+
+      // Predict new load step
+      for (int i = s; i <= e; i++) {
+        for (int j = 0; j < Do.ncols(); j++) {
+          if (com_mod.gr_coup_wss && !update) {
+            Dn(i,j) = Do(i,j);
+          } else {
+            An(i,j) = Yo(i,j);
+            Yn(i,j) = Do(i,j);
+            Dn(i,j) = 2.0 * Do(i,j) - Yo(i,j);
+          }
+        }
+      }
+      return;
+    }
+    else {
+      for (int i = s; i <= e; i++) {
+        for (int j = 0; j < Ao.ncols(); j++) {
+          An(i,j) = Ao(i,j) * coef;
+        }
       }
     }
 

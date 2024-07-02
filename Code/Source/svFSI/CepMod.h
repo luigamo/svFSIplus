@@ -43,6 +43,7 @@
 #include "CepModBo.h"
 #include "CepModFn.h"
 #include "CepModTtp.h"
+#include "CepModCtm.h"
 #include "consts.h"
 
 #include "Array.h"
@@ -55,7 +56,8 @@ enum class ElectrophysiologyModelType {
   AP = 101,
   BO = 102, 
   FN = 103, 
-  TTP = 104
+  TTP = 104,
+  CTM = 105
 };
 
 extern const std::map<std::string,ElectrophysiologyModelType> cep_model_name_to_type;
@@ -68,7 +70,8 @@ static std::ostream &operator << ( std::ostream& strm, ElectrophysiologyModelTyp
     {ElectrophysiologyModelType::AP,"AP"}, 
     {ElectrophysiologyModelType::BO, "BO"}, 
     {ElectrophysiologyModelType::FN, "FN"}, 
-    {ElectrophysiologyModelType::TTP, "TTP"}, 
+    {ElectrophysiologyModelType::TTP, "TTP"},
+	{ElectrophysiologyModelType::CTM, "CTM"}
   };
   return strm << names.at(type);
 }
@@ -172,7 +175,7 @@ class cepModelType
     /// @brief  Number of fiber directions
     int nFn = 0;
 
-    /// @brief  Myocardium zone id, default to epicardium.
+    /// @brief  Myocardium zone id, default to LA.
     int imyo = 1;
 
     /// @brief  Time step for integration
@@ -243,6 +246,10 @@ class CepMod
 
     /// @brief Interface for Tusscher-Panfilov cellular activation model.
     CepModTtp ttp;
+
+    /// @brief Interface for Courtemanche cellular activation model.
+    CepModCtm ctm;
+
 
     /// @brief ECG leads
     ecgLeadsType ecgleads;

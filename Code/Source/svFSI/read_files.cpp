@@ -383,7 +383,7 @@ void read_bc(Simulation* simulation, EquationParameters* eq_params, eqType& lEq,
 
   // Impose BC on the state variable or its integral
   //
-  if (std::set<EquationType>{Equation_lElas,Equation_mesh,Equation_struct,Equation_shell}.count(lEq.phys) != 0) {
+  if (std::set<EquationType>{Equation_lElas,Equation_mesh,Equation_struct,Equation_shell,Equation_gr}.count(lEq.phys) != 0) {
     ltmp = true;
   } else {
     ltmp = false;
@@ -470,7 +470,7 @@ void read_bc(Simulation* simulation, EquationParameters* eq_params, eqType& lEq,
   //
   lBc.flwP = false;
   if (utils::btest(lBc.bType, enum_int(BoundaryConditionType::bType_Neu))) {
-    if (lEq.phys == Equation_struct || lEq.phys == Equation_ustruct) {
+    if (lEq.phys == Equation_struct || lEq.phys == Equation_ustruct || lEq.phys == Equation_gr) {
       lBc.flwP = bc_params->follower_pressure_load.value();
     }
   }
@@ -933,7 +933,12 @@ void read_cep_domain(Simulation* simulation, EquationParameters* eq_params, Doma
 
     case ElectrophysiologyModelType::TTP:
       lDmn.cep.nX = 7;
-      lDmn.cep.nG = 12;
+      lDmn.cep.nG = 15;
+    break;
+	
+	case ElectrophysiologyModelType::CTM:
+	  lDmn.cep.nX = 14;
+	  lDmn.cep.nG = 17;
     break;
 
     default: 
@@ -967,12 +972,24 @@ void read_cep_domain(Simulation* simulation, EquationParameters* eq_params, Doma
   if (domain_params->myocardial_zone.defined()) { 
     auto myocardial_zone = domain_params->myocardial_zone.value();
     std::transform(myocardial_zone.begin(), myocardial_zone.end(), myocardial_zone.begin(), ::tolower);
-    if (std::set<std::string>{"epi", "epicardium"}.count(myocardial_zone)) {
+    if (std::set<std::string>{"epi", "left_atria", "la", "epicardium"}.count(myocardial_zone)) {
       lDmn.cep.imyo = 1;
-    } else if (std::set<std::string>{"endo", "endocardium", "pfib", "purkinje"}.count(myocardial_zone)) {
+    } else if (std::set<std::string>{"endo", "endocardium", "pfib", "purkinje", "bbra"}.count(myocardial_zone)) {
       lDmn.cep.imyo = 2;
-    } else if (std::set<std::string>{"myo", "mid-myo", "myocardium"}.count(myocardial_zone)) {
+    } else if (std::set<std::string>{"myo", "mid-myo", "myocardium", "tvr"}.count(myocardial_zone)) {
       lDmn.cep.imyo = 3;
+    } else if (std::set<std::string>{"raa", "right_atrial_appendix"}.count(myocardial_zone)) {
+      lDmn.cep.imyo = 4;
+    } else if (std::set<std::string>{"right_atria", "ra"}.count(myocardial_zone)) {
+      lDmn.cep.imyo = 5;
+    } else if (std::set<std::string>{"pv", "pulmonary_veins"}.count(myocardial_zone)) {
+      lDmn.cep.imyo = 6;
+    } else if (std::set<std::string>{"laa", "left_atrial_appendix"}.count(myocardial_zone)) {
+      lDmn.cep.imyo = 7;
+    } else if (std::set<std::string>{"mv", "mitral_valve"}.count(myocardial_zone)) {
+      lDmn.cep.imyo = 8;
+    } else if (std::set<std::string>{"bbla", "left_Bachmanns_bundle"}.count(myocardial_zone)) {
+      lDmn.cep.imyo = 9;
     } else {
       throw std::runtime_error("Unknown myocardial zone type '" + myocardial_zone + "'.");
     }
@@ -985,6 +1002,18 @@ void read_cep_domain(Simulation* simulation, EquationParameters* eq_params, Doma
   if (domain_params->G_Ks.defined())  { cep_mod.ttp.G_Ks[lDmn.cep.imyo - 1] = domain_params->G_Ks.value(); }
   if (domain_params->G_to.defined())  { cep_mod.ttp.G_to[lDmn.cep.imyo - 1] = domain_params->G_to.value(); }
   if (domain_params->G_CaL.defined()) { cep_mod.ttp.G_CaL = domain_params->G_CaL.value(); }
+  
+  // Set Ctm parameters.
+  //
+  if (domain_params->G_Na.defined())  { cep_mod.ctm.G_Na = domain_params->G_Na.value(); }
+  if (domain_params->G_Kr.defined())  { cep_mod.ctm.G_Kr = domain_params->G_Kr.value(); }
+  if (domain_params->G_Ks.defined())  { cep_mod.ctm.G_Ks[lDmn.cep.imyo - 1] = domain_params->G_Ks.value(); }
+  if (domain_params->G_to.defined())  { cep_mod.ctm.G_to[lDmn.cep.imyo - 1] = domain_params->G_to.value(); }
+  if (domain_params->G_CaL.defined()) { cep_mod.ctm.G_CaL = domain_params->G_CaL.value(); }
+  if (domain_params->lambda.defined()) { cep_mod.ctm.lambda = domain_params->lambda.value(); }
+  if (domain_params->SAC_factor.defined()) { cep_mod.ctm.SAC_factor = domain_params->SAC_factor.value(); }
+  if (domain_params->land_factor.defined()) { cep_mod.ctm.land_factor = domain_params->land_factor.value(); }
+
 
   // Set Bo parameters.
   //
@@ -1321,7 +1350,8 @@ void read_domain(Simulation* simulation, EquationParameters* eq_params, eqType& 
      //
      if ( (lEq.dmn[iDmn].phys == EquationType::phys_shell) || 
           (lEq.dmn[iDmn].phys == EquationType::phys_struct) || 
-          (lEq.dmn[iDmn].phys == EquationType::phys_ustruct)) { 
+          (lEq.dmn[iDmn].phys == EquationType::phys_ustruct) || 
+          (lEq.dmn[iDmn].phys == EquationType::phys_gr)) { 
         read_mat_model(simulation, eq_params, domain_params, lEq.dmn[iDmn]);
         if (utils::is_zero(lEq.dmn[iDmn].stM.Kpen) && lEq.dmn[iDmn].phys == EquationType::phys_struct) { 
           //err = "Incompressible struct is not allowed. Use "//  "penalty method or ustruct"
@@ -1366,14 +1396,11 @@ void read_eq(Simulation* simulation, EquationParameters* eq_params, eqType& lEq)
     if (eq_params->couple_to_genBC.defined()) {
       cplBC.useGenBC = true;
       cplbc_type_str = eq_params->couple_to_genBC.type.value();
-    } else if (eq_params->couple_to_svZeroD.defined()) {
-      cplBC.useSvZeroD = true;
-      cplbc_type_str = eq_params->couple_to_svZeroD.type.value();
     } else if (eq_params->couple_to_cplBC.defined()) {
       cplbc_type_str = eq_params->couple_to_cplBC.type.value();
     }
 
-    if (eq_params->couple_to_genBC.defined() || eq_params->couple_to_cplBC.defined() || eq_params->couple_to_svZeroD.defined()) {
+    if (eq_params->couple_to_genBC.defined() || eq_params->couple_to_cplBC.defined()) {
       try {
         cplBC.schm = consts::cplbc_name_to_type.at(cplbc_type_str);
       } catch (const std::out_of_range& exception) {
@@ -1386,9 +1413,6 @@ void read_eq(Simulation* simulation, EquationParameters* eq_params, eqType& lEq)
       if (cplBC.useGenBC) {
         cplBC.binPath = eq_params->couple_to_genBC.zerod_code_file_path.value();
         cplBC.commuName = "GenBC.int";
-        cplBC.nX = 0;
-      } else if (cplBC.useSvZeroD) {
-        cplBC.commuName = "svZeroD_interface.dat";
         cplBC.nX = 0;
       } else {
         auto& cplBC_params = eq_params->couple_to_cplBC;
@@ -1736,12 +1760,11 @@ void read_files(Simulation* simulation, const std::string& file_name)
     }     
 
     if (eq.phys == EquationType::phys_heatF) {   
-      auto& eq1_params = simulation->parameters.equation_parameters[0];
-      auto& general_params = simulation->parameters.general_simulation_parameters;
+      auto& eq1_params = simulation->parameters.equation_parameters[0]; 
       auto eq1_type = eq1_params->type.value();
-      if ((eq1_type != "fluid") && (eq1_type != "FSI") && (!general_params.use_precomputed_solution.value())) {
+      if ((eq1_type != "fluid") && (eq1_type != "FSI")) {    
         throw std::runtime_error("heatF equation has to be specified after fluid/FSI equation");
-      }
+      }     
     }     
 
     if (eq.phys == EquationType::phys_mesh) {   
@@ -1777,7 +1800,7 @@ void read_files(Simulation* simulation, const std::string& file_name)
     for (int iEq = 0; iEq < nEq; iEq++) {
       auto& eq = com_mod.eq[iEq];
       if ((eq.phys == EquationType::phys_CEP) || (eq.phys == EquationType::phys_struct) || 
-          (eq.phys == EquationType::phys_ustruct)) {
+          (eq.phys == EquationType::phys_ustruct) || (eq.phys == EquationType::phys_gr)) {
         i = i + 1;
       }
     }
@@ -1799,7 +1822,7 @@ void read_files(Simulation* simulation, const std::string& file_name)
         auto& eq = com_mod.eq[iEq];
         for (int i = 0; i < eq.nDmn; i++) {
           auto& dmn = eq.dmn[i];
-          if ((dmn.phys != EquationType::phys_ustruct) && (dmn.phys != EquationType::phys_struct)) { 
+          if ((dmn.phys != EquationType::phys_ustruct) && (dmn.phys != EquationType::phys_struct) && (dmn.phys != EquationType::phys_gr)) { 
             continue; 
           }
           if (dmn.stM.isoType != ConstitutiveModelType::stIso_HO) {
@@ -1974,12 +1997,6 @@ void read_ls(Simulation* simulation, EquationParameters* eq_params, consts::Solv
   using namespace consts;
   using namespace fsi_linear_solver;
 
-  #define n_debug_read_ls
-  #ifdef debug_read_ls
-  DebugMsg dmsg(__func__, simulation->com_mod.cm.idcm());
-  dmsg.banner();
-  #endif
-
   // Map SolverType to LinearSolverType enums.
   static std::map<SolverType,LinearSolverType> solver_to_ls_map = {
     {SolverType::lSolver_NS, LinearSolverType::LS_TYPE_NS},
@@ -1993,9 +2010,6 @@ void read_ls(Simulation* simulation, EquationParameters* eq_params, consts::Solv
   SolverType solver_type;
   LinearSolverType FSILSType;
   bool solver_type_defined = eq_params->linear_solver.type.defined();
-  #ifdef debug_read_ls
-  dmsg << "solver_type_defined: " << solver_type_defined;
-  #endif
 
   if (solver_type_defined) {
     auto solver_str = eq_params->linear_solver.type.value();
@@ -2012,9 +2026,6 @@ void read_ls(Simulation* simulation, EquationParameters* eq_params, consts::Solv
   FSILSType = solver_to_ls_map[solver_type];
   for (auto entry : solver_name_to_type) {
     if (solver_type == entry.second) {
-      #ifdef debug_read_ls
-      dmsg << "solver_type: " << entry.first;
-      #endif
       break;
     }
   }
@@ -2022,37 +2033,56 @@ void read_ls(Simulation* simulation, EquationParameters* eq_params, consts::Solv
   // Set linear solver parameters.
   //
   lEq.ls.LS_type = solver_type;
+
   fsi_linear_solver::fsils_ls_create(lEq.FSILS, FSILSType);
 
-  // Process linear_algebra parameters.
+  // Set preconditioner type.
   //
-  auto& linear_algebra = eq_params->linear_solver.linear_algebra;
-  #ifdef debug_read_ls
-  dmsg << "linear_algebra.defined: " << linear_algebra.defined();
-  dmsg << "linear_algebra.type: " << linear_algebra.type();
-  dmsg << "linear_algebra.preconditioner: " << linear_algebra.preconditioner();
+  lEq.ls.PREC_Type = PreconditionerType::PREC_FSILS;
+
+  #ifdef WITH_TRILINOS
+  if (FSILSType == LinearSolverType::LS_TYPE_NS) {
+    lEq.ls.PREC_Type = PreconditionerType::PREC_FSILS;
+  } else {
+    lEq.useTLS = true; 
+    lEq.ls.PREC_Type = PreconditionerType::PREC_TRILINOS_DIAGONAL;
+  }
   #endif
-
-  if (!linear_algebra.defined()) {
-    throw std::runtime_error("[svFSIplus] No <Linear_algebra> section has been defined for equation '" + 
-        eq_params->type() + ".");
-  }
-
-  lEq.linear_algebra_type = LinearAlgebra::name_to_type.at(linear_algebra.type());
-  auto prec_type = consts::preconditioner_name_to_type.at(linear_algebra.preconditioner());
-  lEq.linear_algebra_preconditioner = consts::preconditioner_name_to_type.at(linear_algebra.preconditioner());
-  lEq.linear_algebra_assembly_type = LinearAlgebra::name_to_type.at(linear_algebra.assembly()); 
-
-  // Check that equation physics is compatible with the LinearAlgebra type. 
-  for (auto& domain : lEq.dmn) {
-    LinearAlgebra::check_equation_compatibility(domain.phys,  lEq.linear_algebra_type, lEq.linear_algebra_assembly_type);
-  }
 
   if (!solver_type_defined) {
     return;
   } 
 
   auto& linear_solver = eq_params->linear_solver;
+
+  if (linear_solver.preconditioner.defined()) { 
+    auto precon_str = linear_solver.preconditioner.value();
+    std::transform(precon_str.begin(), precon_str.end(), precon_str.begin(), ::tolower);
+    try {
+      auto precon_entry = preconditioner_name_to_type.at(precon_str);
+      lEq.ls.PREC_Type = precon_entry.first; 
+      lEq.useTLS = precon_entry.second;
+    } catch (const std::out_of_range& exception) {
+      throw std::runtime_error("Unknown preconditioner '" + precon_str + ".");
+    }
+
+    //lEq.useTLS = use_trilinos;
+  }
+
+  if (lEq.ls.PREC_Type == PreconditionerType::PREC_PETSC) {
+    if (!linear_solver.PETSc_file_path.defined()){
+      throw std::runtime_error("No PETSc config file");
+    }
+    lEq.ls.config = linear_solver.PETSc_file_path.value();
+  }
+
+
+  if (lEq.useTLS) {
+    lEq.assmTLS = linear_solver.use_trilinos_for_assembly.value();
+    if (lEq.assmTLS && simulation->com_mod.ibFlag) {
+      throw std::runtime_error("Cannot assemble immersed bodies using Trilinos");
+    } 
+  } 
 
   lEq.ls.mItr = linear_solver.max_iterations.value();
   lEq.FSILS.RI.mItr = lEq.ls.mItr;
@@ -2083,10 +2113,6 @@ void read_ls(Simulation* simulation, EquationParameters* eq_params, consts::Solv
 
     lEq.FSILS.GM.sD = lEq.FSILS.RI.sD;
   } 
-
-  #ifdef debug_read_ls
-  dmsg << "Done " << " ";
-  #endif
 }
 
 //----------------

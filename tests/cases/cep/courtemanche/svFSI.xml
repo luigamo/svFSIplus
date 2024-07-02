@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<svFSIFile version="0.1">
+
+<GeneralSimulationParameters>
+  <Continue_previous_simulation> false </Continue_previous_simulation>
+  <Number_of_spatial_dimensions> 3 </Number_of_spatial_dimensions> 
+  <Number_of_time_steps> 5000 </Number_of_time_steps> 
+  <Time_step_size> 0.1 </Time_step_size> 
+  <Spectral_radius_of_infinite_time_step> 0.50 </Spectral_radius_of_infinite_time_step> 
+  <Searched_file_name_to_trigger_stop> STOP_SIM </Searched_file_name_to_trigger_stop> 
+
+  <Save_results_to_VTK_format> true </Save_results_to_VTK_format> 
+  <Name_prefix_of_saved_VTK_files> result </Name_prefix_of_saved_VTK_files> 
+  <Increment_in_saving_VTK_files> 10 </Increment_in_saving_VTK_files> 
+  <Start_saving_after_time_step> 1 </Start_saving_after_time_step> 
+
+  <Increment_in_saving_restart_files> 100 </Increment_in_saving_restart_files> 
+  <Convert_BIN_to_VTK_format> 0 </Convert_BIN_to_VTK_format> 
+
+  <Verbose> 1 </Verbose> 
+  <Warning> 0 </Warning> 
+  <Debug> 0 </Debug> 
+</GeneralSimulationParameters>
+
+<Add_mesh name="msh" > 
+
+ <Mesh_file_path> mesh/mesh-complete.mesh.vtu   </Mesh_file_path> 
+
+  <Add_face name="X0">
+      <Face_file_path> mesh/mesh-surfaces/X0.vtp </Face_file_path>
+  </Add_face>
+
+  <Add_face name="X1">
+      <Face_file_path> mesh/mesh-surfaces/X1.vtp </Face_file_path>
+  </Add_face>
+
+  <Add_face name="Y0">
+      <Face_file_path> mesh/mesh-surfaces/Y0.vtp </Face_file_path>
+  </Add_face>
+
+  <Add_face name="Y1">
+      <Face_file_path> mesh/mesh-surfaces/Y1.vtp </Face_file_path>
+  </Add_face>
+  <Fiber_direction> (1,0,0) </Fiber_direction>
+  <Domain_file_path> domain_info_planar_X.dat </Domain_file_path>
+
+</Add_mesh>
+
+<Add_equation type="CEP" > 
+   <Coupled> true </Coupled>
+   <Min_iterations> 1 </Min_iterations>  
+   <Max_iterations> 5 </Max_iterations> 
+   <Tolerance> 1e-6 </Tolerance> 
+
+  <Domain id="1" >
+     <Electrophysiology_model> CTM </Electrophysiology_model>
+     <Isotropic_conductivity> 0.028 </Isotropic_conductivity>
+     <Anisotropic_conductivity> 0.32 </Anisotropic_conductivity>
+     <Myocardial_zone> la </Myocardial_zone>
+     <G_Na> 7.8 </G_Na>
+     <G_CaL> 0.11142 </G_CaL>
+     <G_Kr> 0.0588 </G_Kr>
+     <G_Ks> 0.129 </G_Ks> 
+     <G_to> 0.1652 </G_to>
+     <SAC_factor> 1.0 </SAC_factor>
+     <lambda> 1.0 </lambda>
+     <land_factor> 1.0 </land_factor>
+     <Stimulus type="Istim" >
+         <Amplitude> -35.714 </Amplitude>
+         <Start_time> 0.0 </Start_time>
+         <Duration> 2.0 </Duration>
+         <Cycle_length> 0.0 </Cycle_length>
+      </Stimulus>
+     <ODE_solver> RK </ODE_solver>
+   </Domain>
+
+  
+   <Domain id="2" >
+      <Electrophysiology_model> CTM </Electrophysiology_model>
+      <Isotropic_conductivity> 0.028 </Isotropic_conductivity>
+      <Anisotropic_conductivity> 0.32 </Anisotropic_conductivity>
+      <Myocardial_zone> la </Myocardial_zone>
+      <G_Na> 7.8 </G_Na>
+      <G_CaL> 0.11142 </G_CaL>
+      <G_Kr> 0.0588 </G_Kr>
+      <G_Ks> 0.129 </G_Ks> 
+      <G_to> 0.1652 </G_to>
+      <SAC_factor> 1.0 </SAC_factor>
+      <lambda> 1.0 </lambda>
+      <land_factor> 1.0 </land_factor>
+      <ODE_solver> RK </ODE_solver>
+   </Domain>
+
+   <Output type="Spatial" >
+      <Action_potential> true </Action_potential>
+      <Tension> true </Tension>
+      <Calcium> true </Calcium>
+   </Output>
+
+   <LS type="GMRES" >
+      <Max_iterations> 100 </Max_iterations> 
+      <Tolerance> 1e-6 </Tolerance>
+      <Krylov_space_dimension> 50 </Krylov_space_dimension>
+   </LS>
+
+</Add_equation>
+
+</svFSIFile>

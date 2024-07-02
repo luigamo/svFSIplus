@@ -47,8 +47,6 @@ void read_vtp_pdata(const std::string& fName, const std::string& kwrd, const int
 
 void read_vtu(const std::string& file_name, mshType& mesh);
 
-void read_precomputed_solution_vtu(const std::string& file_name, const std::string& field_name, mshType& mesh);
-
 void read_vtu_pdata(const std::string& fName, const std::string& kwrd, const int nsd, const int m, const int idx, mshType& mesh);
 
 void read_vtus(Simulation* simulation, Array<double>& lA, Array<double>& lY, Array<double>& lD, const std::string& fName);
@@ -60,6 +58,8 @@ void write_vtu(ComMod& com_mod, mshType& lM, const std::string& fName);
 void write_vtu_debug(ComMod& com_mod, mshType& lM, const std::string& fName);
 
 void write_vtus(Simulation* simulation, const Array<double>& lA, const Array<double>& lY, const Array<double>& lD, const bool lAve);
+
+void smooth_output(ComMod& com_mod, CmMod& cm_mod);
 
 };
 

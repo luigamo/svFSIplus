@@ -503,6 +503,49 @@ class StVenantKirchhoffParameters : public ParameterLists
     bool value_set = false;
 };
 
+class GREquilibratedParameters : public ParameterLists
+{ 
+  public:
+    GREquilibratedParameters();
+    void set_values(tinyxml2::XMLElement* modl_params);
+    void print_parameters();
+    bool value_set = false;
+    enum gr_example { none, aneurysm, tortuosity, stenosis };
+    Parameter<int> n_t_pre;
+    Parameter<int> n_t_end;
+    Parameter<int> example;
+    Parameter<double> KsKi;
+    Parameter<double> curve;
+    Parameter<double> mult;
+    Parameter<double> rIo;
+    Parameter<double> hwaves;
+    Parameter<double> lo;
+    Parameter<double> phieo;
+    Parameter<double> phimo;
+    Parameter<double> phico;
+    Parameter<double> eta;
+    Parameter<double> mu;
+    Parameter<double> Get;
+    Parameter<double> Gez;
+    Parameter<double> alpha;
+    Parameter<double> cm;
+    Parameter<double> dm;
+    Parameter<double> Gm;
+    Parameter<double> cc;
+    Parameter<double> dc;
+    Parameter<double> Gc;
+    Parameter<double> betat;
+    Parameter<double> betaz;
+    Parameter<double> betad;
+    Parameter<double> Tmax;
+    Parameter<double> lamM;
+    Parameter<double> lam0;
+    Parameter<double> KfKi;
+    Parameter<double> inflam;
+    Parameter<double> aexp;
+    Parameter<double> delta;
+};
+
 /// @brief The ConstitutiveModelParameters class store parameters
 /// for various constitutive models.
 class ConstitutiveModelParameters : public ParameterLists
@@ -521,6 +564,7 @@ class ConstitutiveModelParameters : public ParameterLists
     static const std::string LEE_SACKS;
     static const std::string NEOHOOKEAN_MODEL;
     static const std::string STVENANT_KIRCHHOFF_MODEL;
+    static const std::string GR_EQUILIBRATED;
     static const std::map<std::string, std::string> constitutive_model_types;
 
     // Constitutive model type.
@@ -533,6 +577,7 @@ class ConstitutiveModelParameters : public ParameterLists
     MooneyRivlinParameters mooney_rivlin;
     NeoHookeanParameters neo_hookean;
     StVenantKirchhoffParameters stvenant_kirchhoff;
+    GREquilibratedParameters gr_equilibrated;
 
     bool value_set = false;
 };
@@ -583,26 +628,6 @@ class CoupleGenBCParameters : public ParameterLists
     bool value_set = false;
 };
 
-//-----------------------
-// CoupleSvZeroDParameters
-//-----------------------
-// Coupling to svZeroD.
-//
-class CoupleSvZeroDParameters : public ParameterLists
-{
-  public:
-    CoupleSvZeroDParameters();
-
-    static const std::string xml_element_name_;
-
-    bool defined() const { return value_set; };
-    void set_values(tinyxml2::XMLElement* xml_elem);
-
-    // attributes.
-    Parameter<std::string> type;
-
-    bool value_set = false;
-};
 /// @brief Body force over a mesh using the "Add_BF" command.
 ///
 /// \code {.xml}
@@ -853,26 +878,6 @@ class ViscosityParameters : public ParameterLists
     ViscosityCassonsParameters cassons_model;
 };
 
-/// @brief The LinearAlgebraParameters class stores parameters for
-/// the 'Linear_algebra' XML element.
-class LinearAlgebraParameters : public ParameterLists
-{
-  public:
-    static const std::string xml_element_name_;
-    LinearAlgebraParameters();
-    void check_input_parameters();
-    void print_parameters();
-    void set_values(tinyxml2::XMLElement* fsi_file);
-    bool defined() const { return values_set_; };
-
-    bool values_set_ = false;
-    Parameter<std::string> type;
-
-    Parameter<std::string> assembly;
-    Parameter<std::string> configuration_file;
-    Parameter<std::string> preconditioner;
-};
-
 /// @brief The LinearSolverParameters class stores parameters for
 /// the 'LS' XML element.
 class LinearSolverParameters : public ParameterLists
@@ -896,11 +901,13 @@ class LinearSolverParameters : public ParameterLists
     Parameter<int> ns_gm_max_iterations; 
     Parameter<double> ns_gm_tolerance;
 
-    //Parameter<std::string> preconditioner;
+    Parameter<std::string> preconditioner;
 
     Parameter<double> tolerance;
 
-    LinearAlgebraParameters linear_algebra;
+    Parameter<bool> use_trilinos_for_assembly;
+
+    Parameter<std::string> PETSc_file_path;
 };
 
 /// @brief The StimulusParameters class stores parameters for 
@@ -1049,6 +1056,9 @@ class DomainParameters : public ParameterLists
     Parameter<double> G_Kr;
     Parameter<double> G_Ks;
     Parameter<double> G_to;
+    Parameter<double> lambda;
+    Parameter<double> SAC_factor;
+	Parameter<double> land_factor;
 
     Parameter<double> tau_fi;
     Parameter<double> tau_si;
@@ -1185,7 +1195,6 @@ class EquationParameters : public ParameterLists
 
     CoupleCplBCParameters couple_to_cplBC;
     CoupleGenBCParameters couple_to_genBC;
-    CoupleSvZeroDParameters couple_to_svZeroD;
 
     DomainParameters* default_domain = nullptr;
 
@@ -1248,11 +1257,9 @@ class GeneralSimulationParameters : public ParameterLists
     Parameter<bool> start_averaging_from_zero;
     Parameter<bool> verbose;
     Parameter<bool> warning;
-    Parameter<bool> use_precomputed_solution;
 
     Parameter<double> spectral_radius_of_infinite_time_step;
     Parameter<double> time_step_size;
-    Parameter<double> precomputed_time_step_size;
 
     Parameter<int> increment_in_saving_restart_files;
     Parameter<int> increment_in_saving_vtk_files;
@@ -1261,14 +1268,13 @@ class GeneralSimulationParameters : public ParameterLists
     Parameter<int> start_saving_after_time_step;
     Parameter<int> starting_time_step;
     Parameter<int> number_of_time_steps;
+    Parameter<int> number_of_new_time_steps;
 
     Parameter<std::string> name_prefix_of_saved_vtk_files;
     Parameter<std::string> restart_file_name; 
     Parameter<std::string> searched_file_name_to_trigger_stop; 
     Parameter<std::string> save_results_in_folder; 
-    Parameter<std::string> simulation_initialization_file_path;
-    Parameter<std::string> precomputed_solution_file_path;
-    Parameter<std::string> precomputed_solution_field_name;
+    Parameter<std::string> simulation_initialization_file_path; 
 };
 
 /// @brief The FaceParameters class is used to store parameters for the
@@ -1339,6 +1345,9 @@ class MeshParameters : public ParameterLists
     //Parameter<std::string> fiber_direction_file_path;
     std::vector<VectorParameter<double>> fiber_directions;
     //VectorParameter<double> fiber_direction;
+
+    Parameter<std::string> gr_properties_file_path;
+    std::vector<VectorParameter<double>> gr_properties;
 
     Parameter<std::string> initial_displacements_file_path;
     Parameter<std::string> initial_pressures_file_path;

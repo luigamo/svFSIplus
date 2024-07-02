@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../../../lib/lib_simvascular_thirdparty_tetgen.a CMakeFiles/_simvascular_thirdparty_tetgen.dir/tetgen.cxx.o CMakeFiles/_simvascular_thirdparty_tetgen.dir/predicates.cxx.o
+/usr/bin/ranlib ../../../lib/lib_simvascular_thirdparty_tetgen.a

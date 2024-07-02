@@ -42,11 +42,11 @@
 //
 namespace read_files_ns {
 
-  const int maxOutput = 22;
+  const int maxOutput = 23;
   using EquationNdop = std::array<int, 4>;
   using EquationOutputs = std::array<consts::OutputType, maxOutput>;
   using EquationPhys = std::vector<consts::EquationType>;
-  using EquationProps = std::array<std::array<consts::PhysicalProperyType, consts::maxNProp>, 20>;
+  using EquationProps = std::array<std::array<consts::PhysicalProperyType, 10>, consts::maxNProp>;
 
   void face_match(ComMod& com_mod, faceType& lFa, faceType& gFa, Vector<int>& ptr);
 

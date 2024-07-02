@@ -40,6 +40,7 @@
 #include "shells.h"
 #include "utils.h"
 #include "vtk_xml.h"
+#include "gr_struct.h"
 #include <math.h>
 
 namespace post {
@@ -201,7 +202,9 @@ void bpost(Simulation* simulation, const mshType& lM, Array<double>& res, const 
 
   Vector<double> pl(fsP.eNoN);
 
-  for (int iFa = 0; iFa < lM.nFa; iFa++) {
+  // for (int iFa = 0; iFa < lM.nFa; iFa++) {
+  const int iFa = 0;
+  {
     auto& fa = lM.fa[iFa];
 
     for (int e = 0; e < fa.nEl; e++) {
@@ -225,7 +228,8 @@ void bpost(Simulation* simulation, const mshType& lM, Array<double>& res, const 
         int Ac = lM.IEN(a,Ec);
 
         for (int i = 0; i < nsd; i++) {
-          lnV(i,a) = gnV(i,Ac);
+          // lnV(i,a) = gnV(i,Ac)
+          lnV(i,a) = fa.eV(i,e);;
           nV(i) = nV(i) + lnV(i,a);
           xl(i,a) = com_mod.x(i,Ac);
 
@@ -558,7 +562,7 @@ void fib_algn_post(Simulation* simulation, const mshType& lM, Array<double>& res
   for (int e = 0; e < lM.nEl; e++) {
     int cDmn = all_fun::domain(com_mod, lM, iEq, e);
     auto cPhys = eq.dmn[cDmn].phys;
-    if (cPhys != EquationType::phys_struct && cPhys != EquationType::phys_ustruct) {
+    if (cPhys != EquationType::phys_struct && cPhys != EquationType::phys_ustruct && cPhys != EquationType::phys_gr) {
       continue; 
     } 
     if (lM.eType == ElementType::NRB) {
@@ -1729,6 +1733,9 @@ void tpost(Simulation* simulation, const mshType& lM, const int m, Array<double>
   Vector<double> resl(m); 
   Array<double> Nx(nsd,fs.eNoN); 
   Vector<double> N(fs.eNoN);
+  Vector<double> gr_int_l(com_mod.nGrInt);
+  Array<double> gr_props_l(lM.n_gr_props,fs.eNoN);
+  Vector<double> gr_props_g(lM.n_gr_props);
 
   double ya = 0.0;
 
@@ -1743,7 +1750,8 @@ void tpost(Simulation* simulation, const mshType& lM, const int m, Array<double>
   for (int e = 0; e < lM.nEl; e++) {
     int cDmn = all_fun::domain(com_mod, lM, iEq, e);
     auto cPhys = eq.dmn[cDmn].phys;
-    if (cPhys != EquationType::phys_struct && cPhys != EquationType::phys_ustruct && cPhys != EquationType::phys_lElas) {
+    if (cPhys != EquationType::phys_struct && cPhys != EquationType::phys_ustruct && 
+        cPhys != EquationType::phys_lElas && cPhys != EquationType::phys_gr) {
       continue; 
     } 
 
@@ -1786,6 +1794,11 @@ void tpost(Simulation* simulation, const mshType& lM, const int m, Array<double>
         dl(i,a) = lD(i,Ac);
         yl(i,a) = lY(i,Ac);
       }
+      if (lM.gr_props.size() != 0) {
+        for (int igr = 0; igr < lM.n_gr_props; igr++) {
+          gr_props_l(igr,a) = lM.gr_props(igr,Ac);
+        }
+      }
     }
 
     Je = 0.0;
@@ -1804,6 +1817,7 @@ void tpost(Simulation* simulation, const mshType& lM, const int m, Array<double>
       auto Im = mat_fun::mat_id(nsd); 
       auto F = Im;
 
+      gr_props_g = 0;
       for (int a = 0; a < fs.eNoN; a++) {
         if (nsd == 3) {
           F(0,0) = F(0,0) + Nx(0,a)*dl(i,a);
@@ -1820,6 +1834,10 @@ void tpost(Simulation* simulation, const mshType& lM, const int m, Array<double>
           F(0,1) = F(0,1) + Nx(1,a)*dl(i,a);
           F(1,0) = F(1,0) + Nx(0,a)*dl(j,a);
           F(1,1) = F(1,1) + Nx(1,a)*dl(j,a);
+        }
+
+        for (int igr = 0; igr < lM.n_gr_props; igr++) {
+          gr_props_g(igr) += gr_props_l(igr,a) * N(a);
         }
       }
 
@@ -1841,6 +1859,14 @@ void tpost(Simulation* simulation, const mshType& lM, const int m, Array<double>
             ed(1) = ed(1) + Nx(1,a)*dl(j,a);
             ed(2) = ed(2) + Nx(1,a)*dl(i,a) + Nx(1,a)*dl(j,a);
           }
+        }
+      }
+
+      // Get internal growth and remodeling variables
+      if (com_mod.grEq) {
+        // todo mrp089: add a function like rslice for vectors to Array3
+        for (int i = 0; i < com_mod.nGrInt; i++) {
+            gr_int_l(i) = com_mod.grInt(e,g,i);
         }
       }
 
@@ -1899,6 +1925,7 @@ void tpost(Simulation* simulation, const mshType& lM, const int m, Array<double>
         case OutputType::outGrp_stress:
         case OutputType::outGrp_cauchy: 
         case OutputType::outGrp_mises:
+        case OutputType::outGrp_gr:
           Array<double> sigma(nsd,nsd);
           Array<double> S(nsd,nsd);
 
@@ -1946,9 +1973,36 @@ void tpost(Simulation* simulation, const mshType& lM, const int m, Array<double>
               sigma = sigma / detF;
             }
 
-          } else if (cPhys == EquationType::phys_struct) {
+          } else if (cPhys == EquationType::phys_struct || cPhys == EquationType::phys_gr) {
             Array<double> Dm(nsymd,nsymd);
-            mat_models::get_pk2cc(com_mod, cep_mod, eq.dmn[cDmn], F, nFn, fN, ya, S, Dm);
+            if (cPhys == EquationType::phys_gr) {
+              double phic;
+              double F3[3][3];
+              double S3[3][3];
+              double Dm3[6][6];
+
+              for (int i = 0; i < 3; i++) {
+                for (int j = 0; j < 3; j++) {
+                  F3[i][j] = F(i,j);
+                }
+              }
+
+              gr::get_pk2cc<3>(com_mod, eq.dmn[cDmn], F3, gr_int_l, gr_props_g, S3, Dm3, phic);
+
+              for (int i = 0; i < 3; i++) {
+                for (int j = 0; j < 3; j++) {
+                  S(i,j) = S3[i][j];
+                }
+              }
+              for (int i = 0; i < 6; i++) {
+                for (int j = 0; j < 6; j++) {
+                  Dm(i,j) = Dm3[i][j];
+                }
+              }
+            }
+            else {
+              mat_models::get_pk2cc(com_mod, cep_mod, eq.dmn[cDmn], F, nFn, fN, ya, S, Dm);
+            }
 
             auto P1 = mat_mul(F, S);
             sigma = mat_mul(P1, transpose(F));
@@ -1997,6 +2051,8 @@ void tpost(Simulation* simulation, const mshType& lM, const int m, Array<double>
             double vmises = sqrt(mat_ddot(sigma, sigma, nsd));
             resl(0) = vmises;
             sE(e) = sE(e) + w*vmises;
+          } else if (outGrp == OutputType::outGrp_gr) {
+            resl = gr_int_l;
           }
         break;
 
@@ -2054,7 +2110,7 @@ void tpost(Simulation* simulation, const mshType& lM, const int m, Array<double>
       int cDmn = all_fun::domain(com_mod, lM, iEq, e);
       auto cPhys = eq.dmn[cDmn].phys;
       if ((cPhys != EquationType::phys_struct) && (cPhys != EquationType::phys_ustruct) && 
-          (cPhys != EquationType::phys_lElas)) {
+          (cPhys != EquationType::phys_lElas) && (cPhys != EquationType::phys_gr)) {
         continue;
       }
 

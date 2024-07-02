@@ -40,7 +40,10 @@ const std::map<std::string,ElectrophysiologyModelType> cep_model_name_to_type
   {"fitzhugh-nagumo", ElectrophysiologyModelType::FN},
   {"fn", ElectrophysiologyModelType::FN},
   {"tentusscher-panfilov", ElectrophysiologyModelType::TTP},
-  {"ttp", ElectrophysiologyModelType::TTP}
+  {"ttp", ElectrophysiologyModelType::TTP},
+  {"courtemanche", ElectrophysiologyModelType::CTM},
+  {"ctm", ElectrophysiologyModelType::CTM}
+  
 };
 
 const std::map<std::string,TimeIntegratioType> cep_time_int_to_type 

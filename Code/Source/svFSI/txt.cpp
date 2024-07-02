@@ -39,7 +39,8 @@
 #include "set_bc.h"
 #include "utils.h"
 #include <math.h>
-#include "svZeroD_subroutines.h"
+#include <iostream>
+#include <fstream>
 
 namespace txt_ns {
 
@@ -150,9 +151,6 @@ void txt(Simulation* simulation, const bool flag)
         if (cplBC.useGenBC) {
           set_bc::genBC_Integ_X(com_mod, cm_mod, "L");
 
-        } else if (cplBC.useSvZeroD){
-          svZeroD::calc_svZeroD(com_mod, cm_mod, 'L');
-          
         } else {
 
           for (auto& bc : com_mod.eq[0].bc) {
@@ -268,7 +266,26 @@ void txt(Simulation* simulation, const bool flag)
             pflag = true;
           }
         break;
-
+		
+	    case OutputType::outGrp_T:
+		  for (int j = 0; j < tnNo; j++) {
+            for (int i = 0; i < l; i++) {
+				tmpV(i,j) = com_mod.Yt(i+s,j);
+            }
+		  }
+		  
+	    case OutputType::outGrp_Cai:
+		  for (int j = 0; j < tnNo; j++) {
+			  for (int i = 0; i < l; i++) {
+				  tmpV(i,j) = com_mod.Cai(i+s,j);
+			  }
+		  }
+		
+		  if (l == 1) {
+            pflag = true;
+		  }
+        break;
+		
         case OutputType::outGrp_D:
           for (int j = 0; j < tnNo; j++) {
             for (int i = 0; i < l; i++) {

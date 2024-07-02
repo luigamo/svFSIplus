@@ -35,14 +35,12 @@
 
 #include "vtk_xml_parser.h" 
 #include "Array.h" 
-#include "Array3.h"
 
 #include <vtkDoubleArray.h>
 #include "vtkCellData.h"
 #include <vtkGenericCell.h>
 #include <vtkIntArray.h>
 #include <vtkPointData.h>
-#include <vtkDataArray.h>
 #include <vtkPolyData.h>
 #include <vtkSmartPointer.h>
 #include <vtkUnsignedCharArray.h>
@@ -53,8 +51,6 @@
 #include <string>
 #include <map>
 #include <vector>
-#include <algorithm>
-#include <cctype>
 
 namespace vtk_xml_parser {
 
@@ -617,6 +613,59 @@ void load_fiber_direction_vtu(const std::string& file_name, const std::string& d
   }
 }
 
+/// @brief Read variable wall properties for growth and remodeling models
+void load_gr_properties_vtu(const std::string& file_name, const std::string& data_name, mshType& mesh)
+{
+  #ifdef debug_load_fiber_direction_vtu
+  std::cout << "[load_fiber_direction_vtu] " << std::endl;
+  std::cout << "[load_fiber_direction_vtu] ===== vtk_xml_parser::load_fiber_direction_vtu ===== " << std::endl;
+  #endif
+  using namespace vtk_xml_parser;
+
+  if (FILE *file = fopen(file_name.c_str(), "r")) {
+      fclose(file);
+  } else {
+    throw std::runtime_error("The growth and remodeling properties VTK file '" + file_name + "' can't be read.");
+  }
+
+  auto reader = vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
+  reader->SetFileName(file_name.c_str());
+  reader->Update();
+  vtkSmartPointer<vtkUnstructuredGrid> vtk_ugrid = reader->GetOutput();
+
+  vtkIdType num_nodes = vtk_ugrid->GetNumberOfPoints();
+  if (num_nodes == 0) {
+    throw std::runtime_error("Failed reading the VTK file '" + file_name + "'.");
+  }
+
+  vtkIdType num_elems = vtk_ugrid->GetNumberOfCells();
+  if (mesh.gnEl != num_elems) {
+    throw std::runtime_error("The number of elements (" + std::to_string(num_elems) +
+        ") in the fiber direction VTK file '" + file_name + "' is not equal to the number of elements ("
+        + std::to_string(mesh.gnEl) + ") for the mesh named '" + mesh.name + "'.");
+  }
+
+  // Get the wall properties data
+  auto wall_data = vtkDoubleArray::SafeDownCast(vtk_ugrid->GetPointData()->GetArray(data_name.c_str()));
+  if (wall_data == nullptr) {
+    throw std::runtime_error("No '" + data_name + "' data found in the fiber direction VTK file '" + file_name + "'");
+  }
+
+  // Initialize array
+  int num_comps = wall_data->GetNumberOfComponents();
+  mesh.n_gr_props = num_comps;
+  mesh.gr_props = Array<double>(num_comps, num_nodes);
+  mesh.gr_props = 0.0;
+
+  // Fill array with components
+  for (int n = 0; n < mesh.gnNo; n++) {
+    auto gr_prop = wall_data->GetTuple(n);
+    for (int i = 0; i < num_comps; i++) {
+      mesh.gr_props(i, n) = gr_prop[i];
+    }
+  }
+}
+
 /// @brief Store a surface mesh read from a VTK .vtp file into a Face object.
 //
 void load_vtp(const std::string& file_name, faceType& face)
@@ -754,76 +803,5 @@ void load_vtu(const std::string& file_name, mshType& mesh)
   store_element_conn(vtk_ugrid, mesh);
 }
 
-
-/// @brief Read a time series field from a VTK .vtu file.
-///
-/// Mesh variables set
-///   mesh.Ys - time series field data (num_components, num_nodes, num_time_steps)
-///
-//
-void load_time_varying_field_vtu(const std::string file_name, const std::string field_name, mshType& mesh)
-{
-  #define n_debug_load_vtu
-  #ifdef debug_load_vtu
-  std::cout << "[load_vtu] " << std::endl;
-  std::cout << "[load_vtu] ===== vtk_xml_parser::load_time_varying_field_vtu ===== " << std::endl;
-  std::cout << "[load_vtu] file_name: " << file_name << std::endl;
-  #endif
-
-    auto reader = vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
-    reader->SetFileName(file_name.c_str());
-    reader->Update();
-    vtkSmartPointer<vtkUnstructuredGrid> vtk_ugrid = reader->GetOutput();
-    vtkIdType num_nodes = vtk_ugrid->GetNumberOfPoints();
-    int array_count = 0;
-    std::vector<std::pair<std::string, int>> array_names;
-
-    if (num_nodes == 0) {
-      throw std::runtime_error("Failed reading the VTK file '" + file_name + "'.");
-    }
-    // Store all array names
-    for (int i = 0; i < vtk_ugrid->GetPointData()->GetNumberOfArrays(); i++) {
-      std::string array_name = vtk_ugrid->GetPointData()->GetArrayName(i);
-      size_t pos = array_name.find(field_name.c_str());
-      if (pos != std::string::npos) {
-        auto not_digit = [](char c) { return !std::isdigit(c); };
-        auto it = std::find_if(array_name.rbegin(), array_name.rend(), not_digit);
-        std::string time_step = std::string(it.base(), array_name.end());
-        array_count++;
-        if (!time_step.empty()) {
-          array_names.push_back({array_name, std::stoi(time_step)});
-        } else {
-          array_names.push_back({array_name, 0});
-        }
-      }
-    }
-    // Check if there are any fields present in the VTK file
-    if (array_count == 0) {
-      throw std::runtime_error("No '" + field_name + "' data found in the VTK file '" + file_name + "'.");
-    }
-
-    // Order all array names by time step
-    std::sort(array_names.begin(), array_names.end(), [](const std::pair<std::string, int>& a, const std::pair<std::string, int>& b) {
-      return a.second < b.second;
-    });
-    // Get the expected number of state-variable components
-    int num_components = vtk_ugrid->GetPointData()->GetArray(array_names[0].first.c_str())->GetNumberOfComponents();
-    mesh.Ys.resize(num_components, num_nodes, array_count);
-
-    for (int i = 0; i < array_count; i++) {
-      auto array = vtk_ugrid->GetPointData()->GetArray(array_names[i].first.c_str());
-      if (array == nullptr) {
-        throw std::runtime_error("No '" + array_names[i].first + "' data found in the VTK file '" + file_name + "'.");
-      }
-      if (array->GetNumberOfComponents() != num_components) {
-        throw std::runtime_error("The number of components in the field '" + array_names[i].first + "' is not equal to the number of components in the first field.");
-      }
-      for (int j = 0; j < num_nodes; j++) {
-        for (int k = 0; k < num_components; k++) {
-          mesh.Ys(k, j, i) = array->GetComponent(j, k);
-        }
-      }
-    }
-}
 } // namespace vtk_utils
 

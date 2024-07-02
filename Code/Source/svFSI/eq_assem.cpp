@@ -47,11 +47,15 @@
 #include "shells.h"
 #include "stokes.h"
 #include "sv_struct.h"
+#include "gr_struct.h"
 #include "ustruct.h"
-
-#include <fsils_api.hpp>
+#include "vtk_xml.h"
 
 #include <math.h>
+
+#ifdef WITH_TRILINOS
+#include "trilinos_linear_solver.h"
+#endif
 
 namespace eq_assem {
 
@@ -139,6 +143,7 @@ void b_assem_neu_bc(ComMod& com_mod, const faceType& lFa, const Vector<double>& 
         break;
 
         case EquationType::phys_struct:
+        case EquationType::phys_gr:
           l_elas::b_l_elas(com_mod, eNoN, w, N, h, nV, lR);
         break;
 
@@ -167,26 +172,32 @@ void b_assem_neu_bc(ComMod& com_mod, const faceType& lFa, const Vector<double>& 
       }
     }
 
-    eq.linear_algebra->assemble(com_mod, eNoN, ptr, lK, lR);
+    // Now doing the assembly part
+
+#ifdef WITH_TRILINOS
+    if (eq.assmTLS) {
+      trilinos_doassem_(const_cast<int&>(eNoN), ptr.data(), lK.data(), lR.data());
+    } else {
+      lhsa_ns::do_assem(com_mod, eNoN, ptr, lK, lR);
+    }
+#else
+    lhsa_ns::do_assem(com_mod, eNoN, ptr, lK, lR);
+#endif
   }
 }
 
-/// @brief  For struct/ustruct - construct follower pressure load contribution
-/// to the residual vector and stiffness matrix.
+
+/// @brief For struct/ustruct - construct follower pressure load.
+///
 /// We use Nanson's formula to take change in normal direction with
 /// deformation into account. Additional calculations based on mesh
 /// need to be performed.
 ///
 /// Reproduces 'SUBROUTINE BNEUFOLWP(lFa, hg, Dg)'
-/// @param com_mod 
-/// @param lBc 
-/// @param lFa 
-/// @param hg Pressure magnitude
-/// @param Dg 
-void b_neu_folw_p(ComMod& com_mod, const bcType& lBc, const faceType& lFa, const Vector<double>& hg, const Array<double>& Dg) 
+//
+void b_neu_folw_p(ComMod& com_mod, const faceType& lFa, const Vector<double>& hg, const Array<double>& Dg) 
 {
   using namespace consts;
-  using namespace utils;
 
   #define n_debug_b_neu_folw_p
   #ifdef debug_b_neu_folw_p 
@@ -269,7 +280,6 @@ void b_neu_folw_p(ComMod& com_mod, const bcType& lBc, const faceType& lFa, const
         nn::gnn(eNoN, nsd, nsd, Nxi, xl, Nx, Jac, ksix);
       }
 
-      // Get surface normal vector
       Vector<double> nV(nsd);
       auto Nx_g = lFa.Nx.slice(g);
       nn::gnnb(com_mod, lFa, e, g, nsd, nsd-1, eNoNb, Nx_g, nV);
@@ -277,7 +287,6 @@ void b_neu_folw_p(ComMod& com_mod, const bcType& lBc, const faceType& lFa, const
       nV = nV / Jac;
       double w = lFa.w(g)*Jac;
 
-      // Compute residual and tangent contributions
       if (cPhys == EquationType::phys_ustruct) {
         if (nsd == 3) {
           ustruct::b_ustruct_3d(com_mod, eNoN, w, N, Nx, dl, hl, nV, lR, lK, lKd);
@@ -285,7 +294,7 @@ void b_neu_folw_p(ComMod& com_mod, const bcType& lBc, const faceType& lFa, const
           ustruct::b_ustruct_2d(com_mod, eNoN, w, N, Nx, dl, hl, nV, lR, lK, lKd);
         }
 
-      } else if (cPhys == EquationType::phys_struct) {
+      } else if (cPhys == EquationType::phys_struct || cPhys == EquationType::phys_gr) {
         if (nsd == 3) {
           struct_ns::b_struct_3d(com_mod, eNoN, w, N, Nx, dl, hl, nV, lR, lK);
         } else {
@@ -294,20 +303,30 @@ void b_neu_folw_p(ComMod& com_mod, const bcType& lBc, const faceType& lFa, const
       }
     }
 
-    if (cPhys == EquationType::phys_ustruct) {
-      ustruct::ustruct_do_assem(com_mod, eNoN, ptr, lKd, lK, lR);
-    } else if (cPhys == EquationType::phys_struct) {
-      eq.linear_algebra->assemble(com_mod, eNoN, ptr, lK, lR);
+    // Now doing the assembly part
+    //
+#ifdef WITH_TRILINOS
+    if (eq.assmTLS) {
+      trilinos_doassem_(const_cast<int&>(eNoN), const_cast<int*>(ptr.data()), lK.data(), lR.data());
+    } else {
+#endif
+      if (cPhys == EquationType::phys_ustruct) {
+        ustruct::ustruct_do_assem(com_mod, eNoN, ptr, lKd, lK, lR);
+      } else if (cPhys == EquationType::phys_struct || cPhys == EquationType::phys_gr) {
+        lhsa_ns::do_assem(com_mod, eNoN, ptr, lK, lR);
+      }
+#ifdef WITH_TRILINOS
     }
+#endif
   }
 }
+
 
 /// @brief This routine assembles the equation on a given mesh.
 ///
 /// Ag(tDof,tnNo), Yg(tDof,tnNo), Dg(tDof,tnNo)
 //
-void global_eq_assem(ComMod& com_mod, CepMod& cep_mod, const mshType& lM, const Array<double>& Ag, 
-    const Array<double>& Yg, const Array<double>& Dg)
+void global_eq_assem(ComMod& com_mod, CepMod& cep_mod, CmMod& cm_mod, const mshType& lM, const Array<double>& Ag, const Array<double>& Yg, const Array<double>& Dg)
 {
   #define n_debug_global_eq_assem
   #ifdef debug_global_eq_assem
@@ -347,6 +366,11 @@ void global_eq_assem(ComMod& com_mod, CepMod& cep_mod, const mshType& lM, const 
 
     case EquationType::phys_struct:
       struct_ns::construct_dsolid(com_mod, cep_mod, lM, Ag, Yg, Dg);
+    break;
+
+    case EquationType::phys_gr:
+        gr::construct_gr(com_mod, lM, Dg, false);
+        // gr::construct_gr_fd_global(com_mod, lM, Dg);
     break;
 
     case EquationType::phys_ustruct:

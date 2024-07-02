@@ -1,0 +1,13 @@
+# Target labels
+ svFSI
+# Source files and their labels
+/mnt/c/Users/Luisa María Gavier/svFSIplus/courtemanche/CMakeFiles/svFSI
+/mnt/c/Users/Luisa María Gavier/svFSIplus/courtemanche/CMakeFiles/svFSI.rule
+/mnt/c/Users/Luisa María Gavier/svFSIplus/courtemanche/CMakeFiles/svFSI-complete.rule
+/mnt/c/Users/Luisa María Gavier/svFSIplus/courtemanche/svFSI-prefix/src/svFSI-stamp/svFSI-build.rule
+/mnt/c/Users/Luisa María Gavier/svFSIplus/courtemanche/svFSI-prefix/src/svFSI-stamp/svFSI-configure.rule
+/mnt/c/Users/Luisa María Gavier/svFSIplus/courtemanche/svFSI-prefix/src/svFSI-stamp/svFSI-download.rule
+/mnt/c/Users/Luisa María Gavier/svFSIplus/courtemanche/svFSI-prefix/src/svFSI-stamp/svFSI-install.rule
+/mnt/c/Users/Luisa María Gavier/svFSIplus/courtemanche/svFSI-prefix/src/svFSI-stamp/svFSI-mkdir.rule
+/mnt/c/Users/Luisa María Gavier/svFSIplus/courtemanche/svFSI-prefix/src/svFSI-stamp/svFSI-patch.rule
+/mnt/c/Users/Luisa María Gavier/svFSIplus/courtemanche/svFSI-prefix/src/svFSI-stamp/svFSI-update.rule

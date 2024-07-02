@@ -1,27 +1,3 @@
-# Copyright (c) 2014-2015 The Regents of the University of California.
-# All Rights Reserved.
-#
-# Permission is hereby granted, free of charge, to any person obtaining
-# a copy of this software and associated documentation files (the
-# "Software"), to deal in the Software without restriction, including
-# without limitation the rights to use, copy, modify, merge, publish,
-# distribute, sublicense, and/or sell copies of the Software, and to
-# permit persons to whom the Software is furnished to do so, subject
-# to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included
-# in all copies or substantial portions of the Software.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
-# IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
-# TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
-# PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
-# OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
@@ -73,7 +49,8 @@ if(SV_USE_TRILINOS)
       MESSAGE(WARNING "Trilinos_FOUND is true but Trilinos_LIBRARIES is empty. This suggests that FIND_PACKAGE(Trilinos) failed quietly. Proceed with caution.")
     endif()
 
-    set(USE_TRILINOS 1)
+    MESSAGE("Setting WITH_TRILINOS to true\n")
+    set(WITH_TRILINOS 1)
   ELSE()
     MESSAGE(WARNING "Could not find Trilinos. Compiling svFSI without Trilinos.")
   ENDIF()
@@ -81,47 +58,43 @@ if(SV_USE_TRILINOS)
 endif()
 
 # add trilinos flags and defines
-if(USE_TRILINOS)
+if(WITH_TRILINOS)
   ADD_DEFINITIONS(-DWITH_TRILINOS)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 endif()
 
-# Build with the PETSc linear algebra package.
-#
-if(NOT "${SV_PETSC_DIR}" STREQUAL "")
+# Find PETSC package if requested
+if(SV_USE_PETSC)
+  # PETSC_DIR is the path to installed PETSC folder.
+  # In linux, it should be defined as an environment variable
+  # in bash shell.
+  IF(DEFINED ENV{PETSC_DIR})
+    set(PETSC_FOUND 1)
+  ELSE()
+    set(PETSC_FOUND 0)
+  ENDIF()
 
-   if(NOT EXISTS ${SV_PETSC_DIR})
-      message(ERROR "The PETSc directory ${SV_PETSC_DIR} could not be found.")
-   endif()
+  IF(PETSC_FOUND)
+    SET(PETSC_DIR $ENV{PETSC_DIR})
+    SET(PETSC_INCLUDE_DIRS "${PETSC_DIR}/include;${PETSC_DIR}/../include")
+    SET(PETSC_LIBRARY_DIRS "-L${PETSC_DIR}/lib -lpetsc")
+    MESSAGE("\nFound PETSC!  Here are the details: ")
+    MESSAGE("   PETSC_DIR = ${PETSC_DIR}")
+    MESSAGE("   PETSC_LIBRARY_DIRS = ${PETSC_LIBRARY_DIRS}")
+    MESSAGE("   PETSC_INCLUDE_DIRS = ${PETSC_INCLUDE_DIRS}")
+    MESSAGE("End of PETSC details\n")
+    MESSAGE("Setting WITH_PETSC to true\n")
+    set(WITH_PETSC 1)
+  ELSE()
+    MESSAGE(WARNING "Could not find PETSC. Compiling svFSI without PETSC.")
+  ENDIF()
 
-   if(NOT EXISTS "${SV_PETSC_DIR}/include")
-      message(ERROR "The PETSc include directory ${SV_PETSC_DIR}/include could not be found.")
-   endif()
+endif()
 
-   if(NOT EXISTS "${SV_PETSC_DIR}/lib")
-      message(ERROR "The PETSc library directory ${SV_PETSC_DIR}/lib could not be found.")
-   endif()
-
-  set(PETSC_INCLUDE_DIRS "${SV_PETSC_DIR}/include;${SV_PETSC_DIR}/../include")
-  set(PETSC_LIBRARY_DIRS "-L${SV_PETSC_DIR}/lib -lpetsc")
-  message("\nBuilding with the PETSc package; the include and libraries directories are: ")
-  message("  PETSC_LIBRARY_DIRS = ${PETSC_LIBRARY_DIRS}")
-  message("  PETSC_INCLUDE_DIRS = ${PETSC_INCLUDE_DIRS}")
-
-  # Set PETSc include and library directories.
-  include_directories(${PETSC_INCLUDE_DIRS})
-  #link_directories(${PETSC_LIBRARY_DIRS})
-
-  # Set C++ directive to use PETSc.
-  ADD_DEFINITIONS(-DUSE_PETSC)
+# add PETSC flags and defines
+if(WITH_PETSC)
+  ADD_DEFINITIONS(-DWITH_PETSC)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pedantic -std=c99")
-
-  set(USE_PETSC 1)
-
-else()
-
-  set(USE_PETSC 0)
-
 endif()
 
 if(ENABLE_ARRAY_INDEX_CHECKING)
@@ -148,10 +121,6 @@ set(lib ${SV_LIB_SVFSI_NAME})
 set(CSRCS 
   Array3.h Array3.cpp 
   Array.h Array.cpp
-  LinearAlgebra.h LinearAlgebra.cpp
-  FsilsLinearAlgebra.h FsilsLinearAlgebra.cpp
-  PetscLinearAlgebra.h PetscLinearAlgebra.cpp
-  TrilinosLinearAlgebra.h TrilinosLinearAlgebra.cpp
   Tensor4.h Tensor4.cpp
   Vector.h Vector.cpp 
 
@@ -177,6 +146,8 @@ set(CSRCS
   fsi.h fsi.cpp
   fs.h fs.cpp
   fft.h fft.cpp
+  gr_equilibrated.h gr_equilibrated.cpp
+  gr_struct.h gr_struct.cpp
   heatf.h heatf.cpp
   heats.h heats.cpp
   initialize.h initialize.cpp
@@ -201,7 +172,6 @@ set(CSRCS
   shells.h shells.cpp
   stokes.h stokes.cpp
   sv_struct.h sv_struct.cpp
-  svZeroD_subroutines.h svZeroD_subroutines.cpp
   txt.h txt.cpp
   utils.h utils.cpp
   ustruct.h ustruct.cpp
@@ -213,29 +183,39 @@ set(CSRCS
   CepModBo.h CepModBo.cpp
   CepModFn.h CepModFn.cpp
   CepModTtp.h CepModTtp.cpp
+  CepModCtm.h CepModCtm.cpp
   ChnlMod.h ChnlMod.cpp
   CmMod.h CmMod.cpp
   ComMod.h ComMod.cpp
   Timer.h
 
   SPLIT.c
-
-  svZeroD_interface/LPNSolverInterface.h svZeroD_interface/LPNSolverInterface.cpp
 )
 
-  # Set PETSc interace code.
-  #if(USE_PETSC)
-  #   set(CSRCS ${CSRCS} petsc_linear_solver.h petsc_linear_solver.c)
-  #endif()
-
-if(USE_TRILINOS)
-  #set(CSRCS ${CSRCS} trilinos_linear_solver.cpp)
+if(WITH_TRILINOS)
+  set(CSRCS ${CSRCS} trilinos_linear_solver.cpp)
 
   # trilinos directories and libraries
   include_directories(${Trilinos_TPL_INCLUDE_DIRS})
   include_directories(${Trilinos_INCLUDE_DIRS})
   link_directories(${Trilinos_LIBRARY_DIRS})
   link_directories(${Trilinos_TPL_LIBRARY_DIRS})
+endif()
+
+# todo mrp: remove and replace with internal functions
+set(SV_FEBIO_DIR "${SV_SOURCE_DIR}/ThirdParty/febio/")
+set(CSRCS ${CSRCS} ${SV_FEBIO_DIR}/eig3.cpp)
+set(CSRCS ${CSRCS} ${SV_FEBIO_DIR}/mat3d.cpp)
+set(CSRCS ${CSRCS} ${SV_FEBIO_DIR}/stdafx.cpp)
+set(CSRCS ${CSRCS} ${SV_FEBIO_DIR}/tens3d.cpp)
+set(CSRCS ${CSRCS} ${SV_FEBIO_DIR}/tens4d.cpp)
+
+if(WITH_PETSC)
+  set(CSRCS ${CSRCS} petsc_linear_solver.c)
+
+  # PETSC directories and libraries
+  include_directories(${PETSC_INCLUDE_DIRS})
+  link_directories(${PETSC_LIBRARY_DIRS})
 endif()
 
 simvascular_add_executable(${SV_SVFSI_EXE}
@@ -264,11 +244,11 @@ if(SV_MPI_EXTRA_LIBRARY)
   target_link_libraries(${SV_SVFSI_EXE} ${SV_MPI_EXTRA_LIBRARY})
 endif()
 
-if(USE_TRILINOS)
+if(WITH_TRILINOS)
   target_link_libraries(${SV_SVFSI_EXE} ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
 endif()
 
-if(USE_PETSC)
+if(WITH_PETSC)
   target_link_libraries(${SV_SVFSI_EXE} ${PETSC_LIBRARY_DIRS})
 endif()
 
@@ -292,69 +272,4 @@ if(ENABLE_COVERAGE)
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 endif()
 
-# unit tests and Google Test
-if(ENABLE_UNIT_TEST)
-
-  # link pthread on ubuntu20
-  find_package(Threads REQUIRED)
-
-  # install Google Test
-  #if(NOT TARGET gtest_main AND NOT TARGET gtest)
-  include(FetchContent)
-  FetchContent_Declare(
-    googletest
-    URL https://github.com/google/googletest/archive/refs/heads/main.zip
-    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-  )
-  FetchContent_MakeAvailable(googletest)
-  #endif()
-
-  enable_testing()
-  include(GoogleTest)
-
-  # add test.cpp for unit test
-
-  # remove the main.cpp and add test.cpp
-  set(TEST_SOURCES "../../../tests/unitTests/test.cpp")
-  list(REMOVE_ITEM CSRCS "main.cpp")
-  list(APPEND CSRCS ${TEST_SOURCES})
-
-  # include source files (same as what svFSI does except for main.cpp)
-  add_executable(run_all_unit_tests ${CSRCS})
-  
-  if(USE_TRILINOS)
-    target_link_libraries(run_all_unit_tests ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
-  endif()
-
-  if(USE_PETSC)
-    target_link_libraries(run_all_unit_tests ${PETSC_LIBRARY_DIRS})
-  endif()
-
-  # libraries
-  target_link_libraries(run_all_unit_tests
-    ${GLOBAL_LIBRARIES}
-    ${INTELRUNTIME_LIBRARIES}
-    ${ZLIB_LIBRARY}
-    ${BLAS_LIBRARIES}
-    ${LAPACK_LIBRARIES}
-    ${METIS_SVFSI_LIBRARY_NAME}
-    ${PARMETIS_SVFSI_LIBRARY_NAME}
-    ${TETGEN_LIBRARY_NAME}
-    ${TINYXML_LIBRARY_NAME}
-    ${SV_LIB_SVFSILS_NAME}${SV_MPI_NAME_EXT}
-    ${VTK_LIBRARIES}
-  )
-
-  # link Google Test
-  target_link_libraries(
-    run_all_unit_tests
-    gtest
-    GTest::gtest_main 
-    pthread   # link pthread on ubuntu20
-  )
-
-  # gtest_discover_tests(runUnitTest)
-  add_test(NAME all_unit_tests COMMAND run_all_unit_tests)
-
-endif()
 

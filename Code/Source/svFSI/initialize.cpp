@@ -69,6 +69,10 @@
 //
 void finalize(Simulation* simulation)
 {
+  // auto& com_mod = simulation->com_mod;
+  // #ifdef WITH_PETSC
+  //   petsc_destroy_all_(&com_mod.nEq);
+  // #endif
 }
 
 /// @brief Using the svFSI specific format binary file for initialization
@@ -158,6 +162,7 @@ void init_from_bin(Simulation* simulation, const std::string& fName, std::array<
           bin_file.read((char*)cem.Ya.data(), cem.Ya.msize());
         } else {
           //READ(fid,REC=cm.tF()) tStamp, cTS, time, timeP(1), eq.iNorm, cplBC.xo, Yo, Ao, Do
+          bin_file.read((char*)Do.data(), Do.msize());
         }
       }
 
@@ -192,6 +197,11 @@ void init_from_bin(Simulation* simulation, const std::string& fName, std::array<
       com_mod.ib.Ubn = com_mod.ib.Ubo;
     }
     */
+  }
+
+  if (com_mod.grEq) {
+    auto& grInt = com_mod.grInt;
+    bin_file.read((char*)grInt.data(), grInt.msize());
   }
 
   bin_file.close();
@@ -422,7 +432,7 @@ void initialize(Simulation* simulation, Vector<double>& timeP)
     }
 
     // For second order eqs. 
-    if (std::set<EquationType>{Equation_lElas, Equation_struct, Equation_shell, Equation_mesh}.count(eq.phys) != 0) {
+    if (std::set<EquationType>{Equation_lElas, Equation_struct, Equation_shell, Equation_mesh, Equation_gr}.count(eq.phys) != 0) {
       eq.am = (2.0 - eq.roInf) / (1.0 + eq.roInf);
 
     // first order equations.
@@ -434,39 +444,16 @@ void initialize(Simulation* simulation, Vector<double>& timeP)
       eq.dof = nsd;
     }
 
-    // This code checks to see if the heatF equation is accompanied
-    // by a fluid equation. If not, it adds the appropriate number of
-    // degrees of freedom based on the precomputed state-variable (velocity)
-    // data.
-    if (eq.phys == Equation_heatF) {
-        bool fflag = false;
-        for (int jEq = 0; jEq < com_mod.nEq; jEq++) {
-            if (std::set < EquationType >
-                {Equation_fluid, Equation_FSI, Equation_CMM, Equation_stokes}.count(com_mod.eq[jEq].phys)) {
-                fflag = true;
-            }
-        }
-        if (com_mod.usePrecomp) {
-            if (!fflag) {
-                tDof = tDof + nsd;
-            }
-        } else {
-            if (!fflag) {
-                throw std::runtime_error(
-                        "HeatF equation must be accompanied by a fluid equation or precomputed velocity data.");
-            }
-        }
-    }
     eq.pNorm = std::numeric_limits<double>::max();
     eq.af = 1.0 / (1.0 + eq.roInf);
     eq.beta = 0.25 * pow((1.0 + eq.am - eq.af), 2.0);
     eq.gam = 0.5 + eq.am - eq.af;
 
     // These are indexes into arrays so need to be zero-based.
-
     eq.s = tDof;
     eq.e = tDof + eq.dof - 1;
     tDof = eq.e + 1;
+
     if (eq.useTLS) {
       flag = true;
     }
@@ -566,12 +553,43 @@ void initialize(Simulation* simulation, Vector<double>& timeP)
     if (com_mod.lhs.foC) {
       fsils_lhs_free(com_mod.lhs);
     }
+
   }
 
   fsi_linear_solver::fsils_commu_create(communicator, cm.com());
 
   fsi_linear_solver::fsils_lhs_create(com_mod.lhs, communicator, com_mod.gtnNo, com_mod.tnNo, nnz, 
       com_mod.ltg, com_mod.rowPtr, com_mod.colPtr, nFacesLS);
+
+  // Initialize Trilinos data structure
+  //
+  if (flag) {
+    com_mod.tls.ltg.resize(com_mod.tnNo);
+    for (int a = 0; a < com_mod.tnNo; a++) {
+      com_mod.tls.ltg(com_mod.lhs.map(a)) = com_mod.ltg(a);
+    }
+  } 
+
+  // Initialize Petsc data structure
+  //
+  #ifdef with_petsc
+    com_mod.pls.ltg.resize(com_mod.tnNo);
+    for (int a = 0; a < com_mod.tnNo; a++) {
+      com_mod.pls.ltg(com_mod.lhs.map(a)) = com_mod.ltg(a);
+    }
+  
+  #endif 
+
+  // Initialize PETSc
+  // #ifdef with_petsc
+    // petsc_initialize_(com_mod.lhs.nNo, com_mod.lhs.mynNo, nnz, com_mod.nEq, com_mod.ltg, com_mod.lhs.map, 
+    // com_mod.lhs.rowPtr, com_mod.lhs.colPtr, com_mod.eq(1).ls.config);
+    // for (int a = 0; a < com_mod.nEq; a++){
+    //   petsc_create_linearsolver_(com_mod.eq(a).ls.LS_type, com_mod.eq(a).ls.PREC_Type, com_mod.eq(a).ls.sD,
+    //   com_mod.eq(a).ls.mItr, com_mod.eq(a).ls.relTol, com_mod.eq(a).ls.absTol, com_mod.eq(a).phys, com_mod.eq(a).dof, 
+    //   a, com_mod.nEq);
+    // }
+  // #endif
 
   // Variable allocation and initialization
   int tnNo = com_mod.tnNo; 
@@ -582,6 +600,8 @@ void initialize(Simulation* simulation, Vector<double>& timeP)
   com_mod.Do.resize(tDof,tnNo); 
   com_mod.Dn.resize(tDof,tnNo); 
   com_mod.Bf.resize(nsd,tnNo);
+  com_mod.Yt.resize(tDof,tnNo);
+  com_mod.Cai.resize(tDof,tnNo);
 
   // [TODO] DaveP not implemented?
   // IF (ibFlag) CALL IB_MEMALLOC() 
@@ -613,6 +633,14 @@ void initialize(Simulation* simulation, Vector<double>& timeP)
     if (cep_mod.cem.cpld) {
       cep_mod.cem.Ya.resize(tnNo);
     }
+  }
+
+  // Growth and remodeling
+  if(com_mod.grEq == true) {
+    // Initialize array for G&R internal variables stored at the Gauss point
+    // Dimension: (#elements, #gauss points, #internal variables)
+    com_mod.grInt.resize(com_mod.msh[0].gnEl,com_mod.msh[0].nG,com_mod.nGrInt);
+    com_mod.grInt_orig.resize(com_mod.msh[0].gnEl,com_mod.msh[0].nG,com_mod.nGrInt);
   }
 
   // Setup data for remeshing.
@@ -713,6 +741,8 @@ void initialize(Simulation* simulation, Vector<double>& timeP)
   com_mod.An = com_mod.Ao;
   com_mod.Yn = com_mod.Yo;
   com_mod.Dn = com_mod.Do;
+  com_mod.Yt = com_mod.Yo;
+  com_mod.Cai = com_mod.Yo;
 
   for (int iM = 0; iM < nMsh; iM++) { 
     if (cm.mas(cm_mod)) {
@@ -818,21 +848,6 @@ void zero_init(Simulation* simulation)
   DebugMsg dmsg(__func__, com_mod.cm.idcm());
   dmsg.banner();
   #endif
-
-  // Initialize precomputed state variables
-  //
-
-  if (com_mod.usePrecomp) {
-    for (int l = 0; l < com_mod.nMsh; l++) {
-      auto& msh = com_mod.msh[l];
-      for (int a = 0; a < com_mod.tnNo; a++) {
-        // In the future this should depend on the equation type.
-        for (int i = 0; i < nsd; i++) {
-          com_mod.Yo(i,a) = msh.Ys(i,a,0);
-        }
-      }
-    }
-  }
 
   // Load any explicitly provided solution variables
   //

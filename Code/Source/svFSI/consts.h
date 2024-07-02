@@ -34,9 +34,7 @@
 #include <iostream>
 #include <limits>
 #include <map>
-#include <set>
 #include <type_traits>
-#include <variant>
 
 // The enums here replicate the PARAMETERs defined
 // in CONSTS.f.
@@ -212,7 +210,8 @@ enum class ConstitutiveModelType
   stVol_NA = 650,
   stVol_Quad = 651, 
   stVol_ST91 = 652, 
-  stVol_M94 = 653
+  stVol_M94 = 653,
+  GR_equi = 654
 };
 
 /// @brief Map for constitutive_model string to ConstitutiveModelType. 
@@ -305,7 +304,8 @@ enum class EquationType
   phys_CMM = 209, 
   phys_CEP = 210,
   phys_ustruct = 211,  // Nonlinear elastodynamics using mixed VMS-stabilized formulation 
-  phys_stokes = 212
+  phys_stokes = 212,
+  phys_gr = 213
 };
 
 constexpr auto Equation_CMM = EquationType::phys_CMM;
@@ -320,6 +320,7 @@ constexpr auto Equation_shell = EquationType::phys_shell;
 constexpr auto Equation_stokes = EquationType::phys_stokes;
 constexpr auto Equation_struct = EquationType::phys_struct;
 constexpr auto Equation_ustruct = EquationType::phys_ustruct;
+constexpr auto Equation_gr = EquationType::phys_gr;
 
 extern const std::map<std::string,EquationType> equation_name_to_type;
 
@@ -360,6 +361,9 @@ enum class OutputType
   outGrp_fS = 523,
   outGrp_C = 524, 
   outGrp_I1 = 525,
+  outGrp_gr = 526,
+  outGrp_T = 527,
+  outGrp_Cai = 528,
 
   out_velocity = 599,
   out_pressure = 598, 
@@ -388,7 +392,10 @@ enum class OutputType
   out_viscosity = 575,
   out_fibStrn = 574,
   out_CGstrain = 573,
-  out_CGInv1 = 572
+  out_CGInv1 = 572,
+  out_gr = 571,
+  out_tension = 570,
+  out_cai = 569
 };
 
 /// @brief Possible physical properties. Current maxNPror is 20.
@@ -425,17 +432,13 @@ enum class PreconditionerType
   PREC_TRILINOS_ICT = 707, 
   PREC_TRILINOS_ML = 708,
   PREC_RCS = 709,
-  PREC_PETSC_JACOBI = 710,
-  PREC_PETSC_RCS = 711
+  PREC_PETSC = 710
 };
 
-extern const std::set<PreconditionerType> fsils_preconditioners;
-extern const std::set<PreconditionerType> petsc_preconditioners;
-extern const std::set<PreconditionerType> trilinos_preconditioners;
-extern const std::map<PreconditionerType, std::string> preconditioner_type_to_name;
-
-/// Map for preconditioner type string to PreconditionerType enum.
-extern const std::map<std::string,PreconditionerType> preconditioner_name_to_type;
+/// Map for preconditioner type string to pair (PreconditionerType enum, bool(true if Trilinos precondition)). 
+using PreconditionerMapType = std::pair<PreconditionerType,bool>;
+//extern const std::map<std::string,PreconditionerType> preconditioner_name_to_type;
+extern const std::map<std::string,PreconditionerMapType> preconditioner_name_to_type;
 
 enum class SolverType
 {
@@ -466,27 +469,6 @@ std::ostream& operator<<(typename std::enable_if<std::is_enum<T>::value, std::os
 {
     return stream << static_cast<typename std::underlying_type<T>::type>(e);
 }
-
-//// Mechanical configurations
-enum class MechanicalConfigurationType
-{ 
-  reference, // reference configuration
-  old_timestep, // old timestep (n) configuration
-  new_timestep // new timestep (n+1) configuration
-};
-
-//-------------------
-// LinearAlgebraType
-//-------------------
-// The type of the numerical linear algebra library.
-//
-enum class LinearAlgebraType {
-  none,
-  fsils,
-  petsc,
-  trilinos
-};
-
 
 };
 
