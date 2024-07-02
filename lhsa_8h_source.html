@@ -112,17 +112,26 @@ $(function() {
 <div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160; </div>
 <div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;  <span class="keywordtype">void</span> do_assem(<a class="code" href="class_com_mod.html">ComMod</a>&amp; com_mod, <span class="keyword">const</span> <span class="keywordtype">int</span> d, <span class="keyword">const</span> <a class="code" href="class_vector.html">Vector&lt;int&gt;</a>&amp; eqN, <span class="keyword">const</span> <a class="code" href="class_array3.html">Array3&lt;double&gt;</a>&amp; lK, <span class="keyword">const</span> Array&lt;double&gt;&amp; lR);</div>
 <div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160; </div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;  <span class="keywordtype">void</span> lhsa(<a class="code" href="class_simulation.html">Simulation</a>* simulation, <span class="keywordtype">int</span>&amp; nnz);</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160; </div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;  <span class="keywordtype">void</span> resiz(<span class="keyword">const</span> <span class="keywordtype">int</span> tnNo, <span class="keywordtype">int</span>&amp; mnnzeic, Array&lt;int&gt;&amp; uInd);</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160; </div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;};</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;  <span class="keywordtype">void</span> do_assem_residual(<a class="code" href="class_com_mod.html">ComMod</a> &amp;com_mod, <span class="keyword">const</span> <span class="keywordtype">int</span> d, <span class="keyword">const</span> <a class="code" href="class_vector.html">Vector&lt;int&gt;</a> &amp;eqN,</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;                         <span class="keyword">const</span> Array&lt;double&gt; &amp;lR);</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160; </div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;  <span class="keywordtype">void</span> do_assem_tangent(<a class="code" href="class_com_mod.html">ComMod</a> &amp;com_mod, <span class="keyword">const</span> <span class="keywordtype">int</span> d, <span class="keyword">const</span> <a class="code" href="class_vector.html">Vector&lt;int&gt;</a> &amp;eqN,</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;                        <span class="keyword">const</span> <a class="code" href="class_array3.html">Array3&lt;double&gt;</a> &amp;lK);</div>
 <div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<span class="preprocessor">#endif</span></div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160; </div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;  <span class="keywordtype">void</span> do_assem_tangent(<a class="code" href="class_com_mod.html">ComMod</a> &amp;com_mod, <span class="keyword">const</span> <span class="keywordtype">int</span> d_row, <span class="keyword">const</span> <span class="keywordtype">int</span> d_col, <span class="keyword">const</span> <a class="code" href="class_vector.html">Vector&lt;int&gt;</a> &amp;eqN_row, <span class="keyword">const</span> <a class="code" href="class_vector.html">Vector&lt;int&gt;</a> &amp;eqN_col,</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;                        <span class="keyword">const</span> <a class="code" href="class_array3.html">Array3&lt;double&gt;</a> &amp;lK);</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;  <span class="keywordtype">void</span> lhsa(<a class="code" href="class_simulation.html">Simulation</a>* simulation, <span class="keywordtype">int</span>&amp; nnz);</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160; </div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;  <span class="keywordtype">void</span> resiz(<span class="keyword">const</span> <span class="keywordtype">int</span> tnNo, <span class="keywordtype">int</span>&amp; mnnzeic, Array&lt;int&gt;&amp; uInd);</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;};</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160; </div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160; </div>
 <div class="ttc" id="aclass_array3_html"><div class="ttname"><a href="class_array3.html">Array3&lt; double &gt;</a></div></div>
-<div class="ttc" id="aclass_com_mod_html"><div class="ttname"><a href="class_com_mod.html">ComMod</a></div><div class="ttdoc">The ComMod class duplicates the data structures in the Fortran COMMOD module defined in MOD....</div><div class="ttdef"><b>Definition:</b> ComMod.h:1313</div></div>
-<div class="ttc" id="aclass_simulation_html"><div class="ttname"><a href="class_simulation.html">Simulation</a></div><div class="ttdef"><b>Definition:</b> Simulation.h:41</div></div>
+<div class="ttc" id="aclass_com_mod_html"><div class="ttname"><a href="class_com_mod.html">ComMod</a></div><div class="ttdoc">The ComMod class duplicates the data structures in the Fortran COMMOD module defined in MOD....</div><div class="ttdef"><b>Definition:</b> ComMod.h:1387</div></div>
+<div class="ttc" id="aclass_simulation_html"><div class="ttname"><a href="class_simulation.html">Simulation</a></div><div class="ttdef"><b>Definition:</b> Simulation.h:40</div></div>
 <div class="ttc" id="aclass_vector_html"><div class="ttname"><a href="class_vector.html">Vector&lt; int &gt;</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->

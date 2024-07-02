@@ -160,20 +160,20 @@ $(function() {
 <div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    <span class="keyword">const</span> PetscInt *svFSI_map, <span class="keyword">const</span> PetscInt *svFSI_rowPtr, </div>
 <div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    <span class="keyword">const</span> PetscInt *svFSI_colPtr, <span class="keywordtype">char</span> *inp);</div>
 <div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160; </div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;<span class="keywordtype">void</span> petsc_create_linearsystem(<span class="keyword">const</span> PetscInt dof, <span class="keyword">const</span> PetscInt iEq, <span class="keyword">const</span> PetscInt nEq, </div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;<span class="keywordtype">void</span> petsc_create_linearsystem(<span class="keyword">const</span> PetscInt <a class="code" href="trilinos__linear__solver_8cpp.html#a03745287ca42590ead4a18807041fc66">dof</a>, <span class="keyword">const</span> PetscInt iEq, <span class="keyword">const</span> PetscInt nEq, </div>
 <div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    <span class="keyword">const</span> PetscReal *svFSI_DirBC, <span class="keyword">const</span> PetscReal *svFSI_lpBC);</div>
 <div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160; </div>
 <div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;<span class="keywordtype">void</span> petsc_create_linearsolver(<span class="keyword">const</span> consts::PreconditionerType <a class="code" href="classls_type.html">lsType</a>, <span class="keyword">const</span> consts::PreconditionerType pcType, </div>
 <div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    <span class="keyword">const</span> PetscInt kSpace, <span class="keyword">const</span> PetscInt maxIter, <span class="keyword">const</span> PetscReal relTol, </div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    <span class="keyword">const</span> PetscReal absTol, <span class="keyword">const</span> consts::EquationType phys, <span class="keyword">const</span> PetscInt dof, </div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    <span class="keyword">const</span> PetscReal absTol, <span class="keyword">const</span> consts::EquationType phys, <span class="keyword">const</span> PetscInt <a class="code" href="trilinos__linear__solver_8cpp.html#a03745287ca42590ead4a18807041fc66">dof</a>, </div>
 <div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;    <span class="keyword">const</span> PetscInt iEq, <span class="keyword">const</span> PetscInt nEq);</div>
 <div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160; </div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;<span class="keywordtype">void</span> petsc_set_values(<span class="keyword">const</span> PetscInt dof, <span class="keyword">const</span> PetscInt iEq, <span class="keyword">const</span> PetscReal *R, </div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;<span class="keywordtype">void</span> petsc_set_values(<span class="keyword">const</span> PetscInt <a class="code" href="trilinos__linear__solver_8cpp.html#a03745287ca42590ead4a18807041fc66">dof</a>, <span class="keyword">const</span> PetscInt iEq, <span class="keyword">const</span> PetscReal *R, </div>
 <div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;    <span class="keyword">const</span> PetscReal *Val, <span class="keyword">const</span> PetscReal *svFSI_DirBC, <span class="keyword">const</span> PetscReal *svFSI_lpBC);</div>
 <div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160; </div>
 <div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;<span class="keywordtype">void</span> petsc_solve(PetscReal *resNorm,  PetscReal *initNorm,  PetscReal *dB, </div>
 <div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;    PetscReal *execTime, <span class="keywordtype">bool</span> *converged, PetscInt *numIter, </div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;    PetscReal *R, <span class="keyword">const</span> PetscInt maxIter, <span class="keyword">const</span> PetscInt dof, </div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;    PetscReal *R, <span class="keyword">const</span> PetscInt maxIter, <span class="keyword">const</span> PetscInt <a class="code" href="trilinos__linear__solver_8cpp.html#a03745287ca42590ead4a18807041fc66">dof</a>, </div>
 <div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    <span class="keyword">const</span> PetscInt iEq);</div>
 <div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160; </div>
 <div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;<span class="keywordtype">void</span> petsc_destroy_all(<span class="keyword">const</span> PetscInt);</div>
@@ -202,9 +202,10 @@ $(function() {
 <div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;PetscErrorCode petsc_debug_save_mat(<span class="keyword">const</span> <span class="keywordtype">char</span> *, Mat);</div>
 <div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160; </div>
 <div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;<span class="preprocessor">#endif</span></div>
-<div class="ttc" id="aclassls_type_html"><div class="ttname"><a href="classls_type.html">lsType</a></div><div class="ttdoc">Linear system of equations solver type.</div><div class="ttdef"><b>Definition:</b> ComMod.h:621</div></div>
+<div class="ttc" id="aclassls_type_html"><div class="ttname"><a href="classls_type.html">lsType</a></div><div class="ttdoc">Linear system of equations solver type.</div><div class="ttdef"><b>Definition:</b> ComMod.h:666</div></div>
 <div class="ttc" id="astruct_l_h_s_ctx_html"><div class="ttname"><a href="struct_l_h_s_ctx.html">LHSCtx</a></div><div class="ttdef"><b>Definition:</b> petsc_impl.h:48</div></div>
 <div class="ttc" id="astruct_l_s_ctx_html"><div class="ttname"><a href="struct_l_s_ctx.html">LSCtx</a></div><div class="ttdef"><b>Definition:</b> petsc_impl.h:66</div></div>
+<div class="ttc" id="atrilinos__linear__solver_8cpp_html_a03745287ca42590ead4a18807041fc66"><div class="ttname"><a href="trilinos__linear__solver_8cpp.html#a03745287ca42590ead4a18807041fc66">dof</a></div><div class="ttdeci">int dof</div><div class="ttdoc">Nodal degrees of freedom.</div><div class="ttdef"><b>Definition:</b> trilinos_linear_solver.cpp:77</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

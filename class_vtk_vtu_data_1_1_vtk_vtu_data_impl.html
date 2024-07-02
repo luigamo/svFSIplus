@@ -83,6 +83,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>create_grid</b> ()</t
 <tr class="memitem:aa8225af9f8ac694db6309cf91f7a9f7f"><td class="memItemLeft" align="right" valign="top"><a id="aa8225af9f8ac694db6309cf91f7a9f7f"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>read_file</b> (const std::string &amp;file_name)</td></tr>
 <tr class="separator:aa8225af9f8ac694db6309cf91f7a9f7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad60598d5a9c9f47c01994cf6e8ed78ec"><td class="memItemLeft" align="right" valign="top"><a id="ad60598d5a9c9f47c01994cf6e8ed78ec"></a>
+vtkSmartPointer&lt; vtkUnstructuredGrid &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_ugrid</b> ()</td></tr>
+<tr class="separator:ad60598d5a9c9f47c01994cf6e8ed78ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1cedece80fb18e11c94ee649f025d3fa"><td class="memItemLeft" align="right" valign="top"><a id="a1cedece80fb18e11c94ee649f025d3fa"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>set_connectivity</b> (const int nsd, const Array&lt; int &gt; &amp;conn, const int pid)</td></tr>
 <tr class="separator:a1cedece80fb18e11c94ee649f025d3fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -101,12 +104,21 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>set_point_data</b> (c
 <tr class="memitem:abfa2ee67cbe58e3750e75ac0e7cd164c"><td class="memItemLeft" align="right" valign="top"><a id="abfa2ee67cbe58e3750e75ac0e7cd164c"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>set_point_data</b> (const std::string &amp;data_name, const <a class="el" href="class_vector.html">Vector</a>&lt; int &gt; &amp;data)</td></tr>
 <tr class="separator:abfa2ee67cbe58e3750e75ac0e7cd164c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad129e3a47d0b62c25c6b43b217e82009"><td class="memItemLeft" align="right" valign="top"><a id="ad129e3a47d0b62c25c6b43b217e82009"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_cell_data</b> (const std::string &amp;data_name, const Array&lt; double &gt; &amp;data)</td></tr>
+<tr class="separator:ad129e3a47d0b62c25c6b43b217e82009"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a284a05c108396881c87fdf351be8efec"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_vtk_vtu_data_1_1_vtk_vtu_data_impl.html#a284a05c108396881c87fdf351be8efec">set_points</a> (const Array&lt; double &gt; &amp;points)</td></tr>
 <tr class="memdesc:a284a05c108396881c87fdf351be8efec"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the 3D points (coordinates) data for the unstructured grid.  <a href="class_vtk_vtu_data_1_1_vtk_vtu_data_impl.html#a284a05c108396881c87fdf351be8efec">More...</a><br /></td></tr>
 <tr class="separator:a284a05c108396881c87fdf351be8efec"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab25cbe055356de06da09b8a358b659b5"><td class="memItemLeft" align="right" valign="top"><a id="ab25cbe055356de06da09b8a358b659b5"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>write</b> (const std::string &amp;file_name)</td></tr>
 <tr class="separator:ab25cbe055356de06da09b8a358b659b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4d16ef527372f9889dfa3d8b916ce6cb"><td class="memItemLeft" align="right" valign="top"><a id="a4d16ef527372f9889dfa3d8b916ce6cb"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>cell_to_point_data</b> (const std::string &amp;data_name)</td></tr>
+<tr class="separator:a4d16ef527372f9889dfa3d8b916ce6cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad52c11668bf33aae830a1837e15cd390"><td class="memItemLeft" align="right" valign="top"><a id="ad52c11668bf33aae830a1837e15cd390"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>smooth_point_data</b> (const std::string &amp;data_name)</td></tr>
+<tr class="separator:ad52c11668bf33aae830a1837e15cd390"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aac30a924e4cd2c6e9700cb4c20c4629c"><td class="memTemplParams" colspan="2"><a id="aac30a924e4cd2c6e9700cb4c20c4629c"></a>
 template&lt;typename T1 , typename T2 &gt; </td></tr>
 <tr class="memitem:aac30a924e4cd2c6e9700cb4c20c4629c"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>set_element_data</b> (const std::string &amp;data_name, const T1 &amp;data, T2 &amp;data_array)</td></tr>

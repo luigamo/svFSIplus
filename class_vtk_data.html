@@ -113,6 +113,9 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>set_point_dat
 <tr class="memitem:a7547ad40e18dc4d45badcfa64056d6cf"><td class="memItemLeft" align="right" valign="top"><a id="a7547ad40e18dc4d45badcfa64056d6cf"></a>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>set_point_data</b> (const std::string &amp;data_name, const <a class="el" href="class_vector.html">Vector</a>&lt; int &gt; &amp;data)=0</td></tr>
 <tr class="separator:a7547ad40e18dc4d45badcfa64056d6cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abf4c4fa02fabc8aeb70638a490fc25e3"><td class="memItemLeft" align="right" valign="top"><a id="abf4c4fa02fabc8aeb70638a490fc25e3"></a>
+virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>set_cell_data</b> (const std::string &amp;data_name, const Array&lt; double &gt; &amp;data)=0</td></tr>
+<tr class="separator:abf4c4fa02fabc8aeb70638a490fc25e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a681a8d28d5c0c23d68cd3b9cdf25e9a2"><td class="memItemLeft" align="right" valign="top"><a id="a681a8d28d5c0c23d68cd3b9cdf25e9a2"></a>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>set_points</b> (const Array&lt; double &gt; &amp;points)=0</td></tr>
 <tr class="separator:a681a8d28d5c0c23d68cd3b9cdf25e9a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -122,6 +125,12 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>set_connectiv
 <tr class="memitem:afdff3c159d750f09cbc3a90ebf417996"><td class="memItemLeft" align="right" valign="top"><a id="afdff3c159d750f09cbc3a90ebf417996"></a>
 virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>has_point_data</b> (const std::string &amp;data_name)=0</td></tr>
 <tr class="separator:afdff3c159d750f09cbc3a90ebf417996"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a33f459c21b649bb105f85ad190196471"><td class="memItemLeft" align="right" valign="top"><a id="a33f459c21b649bb105f85ad190196471"></a>
+virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>cell_to_point_data</b> (const std::string &amp;data_name)=0</td></tr>
+<tr class="separator:a33f459c21b649bb105f85ad190196471"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a73df2988d2f997d78f51823c07d672ed"><td class="memItemLeft" align="right" valign="top"><a id="a73df2988d2f997d78f51823c07d672ed"></a>
+virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>smooth_point_data</b> (const std::string &amp;data_name)=0</td></tr>
+<tr class="separator:a73df2988d2f997d78f51823c07d672ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6ebdaa65e71b1e180316e167f7ee94aa"><td class="memItemLeft" align="right" valign="top"><a id="a6ebdaa65e71b1e180316e167f7ee94aa"></a>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>copy_point_data</b> (const std::string &amp;data_name, Array&lt; double &gt; &amp;mesh_data)=0</td></tr>
 <tr class="separator:a6ebdaa65e71b1e180316e167f7ee94aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -131,6 +140,9 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>copy_point_da
 <tr class="memitem:a38c13562ab22fcfbd1983a3067a2efe5"><td class="memItemLeft" align="right" valign="top"><a id="a38c13562ab22fcfbd1983a3067a2efe5"></a>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>write</b> ()=0</td></tr>
 <tr class="separator:a38c13562ab22fcfbd1983a3067a2efe5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af18c6f2d9f1d8cc200ef6c05424c29bb"><td class="memItemLeft" align="right" valign="top"><a id="af18c6f2d9f1d8cc200ef6c05424c29bb"></a>
+virtual Array&lt; double &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_point_data</b> (const std::string &amp;data_name)=0</td></tr>
+<tr class="separator:af18c6f2d9f1d8cc200ef6c05424c29bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>

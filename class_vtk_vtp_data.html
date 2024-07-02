@@ -126,6 +126,12 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>copy_point_data</b> (
 <tr class="memitem:a2811ed67b0befe319ebbb6ae38ed9491"><td class="memItemLeft" align="right" valign="top"><a id="a2811ed67b0befe319ebbb6ae38ed9491"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>has_point_data</b> (const std::string &amp;data_name)</td></tr>
 <tr class="separator:a2811ed67b0befe319ebbb6ae38ed9491"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acc4180c978011e8a31e97e706e9a2ee1"><td class="memItemLeft" align="right" valign="top"><a id="acc4180c978011e8a31e97e706e9a2ee1"></a>
+virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>cell_to_point_data</b> (const std::string &amp;data_name)</td></tr>
+<tr class="separator:acc4180c978011e8a31e97e706e9a2ee1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa170e5c057b03d3290ce3b3aad8b0611"><td class="memItemLeft" align="right" valign="top"><a id="aa170e5c057b03d3290ce3b3aad8b0611"></a>
+virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>smooth_point_data</b> (const std::string &amp;data_name)</td></tr>
+<tr class="separator:aa170e5c057b03d3290ce3b3aad8b0611"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac27d9a4f396ea519bbb44223c359a496"><td class="memItemLeft" align="right" valign="top"><a id="ac27d9a4f396ea519bbb44223c359a496"></a>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>set_connectivity</b> (const int nsd, const Array&lt; int &gt; &amp;conn, const int pid=0)</td></tr>
 <tr class="separator:ac27d9a4f396ea519bbb44223c359a496"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -144,6 +150,9 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>set_point_dat
 <tr class="memitem:ae5667942102649d6657db6d05c229587"><td class="memItemLeft" align="right" valign="top"><a id="ae5667942102649d6657db6d05c229587"></a>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>set_point_data</b> (const std::string &amp;data_name, const <a class="el" href="class_vector.html">Vector</a>&lt; int &gt; &amp;data)</td></tr>
 <tr class="separator:ae5667942102649d6657db6d05c229587"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab3f3057aa997b3fad9be43a83d6e3f69"><td class="memItemLeft" align="right" valign="top"><a id="ab3f3057aa997b3fad9be43a83d6e3f69"></a>
+virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>set_cell_data</b> (const std::string &amp;data_name, const Array&lt; double &gt; &amp;data)</td></tr>
+<tr class="separator:ab3f3057aa997b3fad9be43a83d6e3f69"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae7ac101da5a2febcc4823610040b7a19"><td class="memItemLeft" align="right" valign="top"><a id="ae7ac101da5a2febcc4823610040b7a19"></a>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>set_points</b> (const Array&lt; double &gt; &amp;points)</td></tr>
 <tr class="separator:ae7ac101da5a2febcc4823610040b7a19"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -231,6 +240,9 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><b>file_name</b><
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">Array&lt; double &gt; VtkVtpData::get_point_data </td>
@@ -240,9 +252,16 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><b>file_name</b><
           <td></td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
 <p>Get an array of point data from an unstructured grid. </p>
+
+<p>Implements <a class="el" href="class_vtk_data.html">VtkData</a>.</p>
 
 </div>
 </div>
